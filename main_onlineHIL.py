@@ -12,7 +12,7 @@ import Simulation as sim
 import matplotlib.pyplot as plt
 import HierarchicalImitationLearning as hil
 
-#%%
+# %%
 theta_hi_1 = 0
 theta_hi_2 = 0
 pi_hi = np.array([[theta_hi_1, 1-theta_hi_1], [1-theta_hi_2, theta_hi_2]])
@@ -38,12 +38,12 @@ pi_b = pi_b.reshape((2,2,2))
 termination_space = 2
 
 size_input = 1
-zeta = 0.01
+zeta = 0.001
 
 mu = np.array([0.5, 0.5])
 max_epoch = 100
 
-nTraj = 1000
+nTraj = 100
 
 [trajDC, controlDC, OptionDC, TerminationDC] = sim.Discrete_policy(zeta, mu, max_epoch, nTraj, option_space, action_space, size_input, P, pi_hi, pi_lo, pi_b)
 
@@ -87,18 +87,18 @@ LabelsDC = labelsDC
    
 # %% initialization
 
-theta_hi_1 = 0.05
-theta_hi_2 = 0.05
+theta_hi_1 = 0.5
+theta_hi_2 = 0.4
 
-theta_lo_1 = 0.8
+theta_lo_1 = 0.5
 theta_lo_2 = 0.9
 theta_lo_3 = 0.95
 theta_lo_4 = 0.8
 
 theta_b_1 = 0.05
 theta_b_2 = 0.05
-theta_b_3 = 0.95
-theta_b_4 = 0.95
+theta_b_3 = 0.7
+theta_b_4 = 0.7
 
 Triple_init = hil.Triple_discrete(theta_hi_1, theta_hi_2, theta_lo_1, theta_lo_2, theta_lo_3, theta_lo_4, theta_b_1, theta_b_2, theta_b_3, theta_b_4)
 
@@ -112,8 +112,6 @@ LAMBDAS = LAMBDAS.reshape(len(gain_lambdas)*len(gain_eta),)
 ETA = ETA.reshape(len(gain_lambdas)*len(gain_eta),)
 
 EV = hil.Experiment_design_discrete(labelsDC, TrainingSetDC, size_input, action_space, option_space, termination_space, N, zeta, mu, Triple_init, gain_lambdas, gain_eta, 'discrete', max_epoch)
-
-
 
 # %% HIL
 
@@ -163,4 +161,10 @@ for n in range(EV.N):
     P_Options = hil.pi_hi_discrete(theta_hi_1, theta_hi_2)
     P_Actions = hil.pi_lo_discrete(theta_lo_1, theta_lo_2, theta_lo_3, theta_lo_4)
     P_Termination = hil.pi_b_discrete(theta_b_1, theta_b_2, theta_b_3, theta_b_4)
+
+# %%
+
+
+
+
 
