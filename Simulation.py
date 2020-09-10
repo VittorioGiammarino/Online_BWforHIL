@@ -442,20 +442,20 @@ def Discrete_policy(zeta, mu, max_epoch, nTraj, option_space, action_space, size
 
         # initial option
         prob_o = mu
-        prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.01)
+        prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.001)
         for i in range(1,prob_o_rescaled.shape[0]):
             prob_o_rescaled[i]=prob_o_rescaled[i]+prob_o_rescaled[i-1]
-        draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
+        draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.001)
         o = np.amin(np.where(draw_o<prob_o_rescaled))
         o_tot = np.append(o_tot,o)
 
         # Termination
         state = obs.reshape((1,size_input))
         prob_b = np.array([[1,0]])
-        prob_b_rescaled = np.divide(prob_b,np.amin(prob_b)+0.01)
+        prob_b_rescaled = np.divide(prob_b,np.amin(prob_b)+0.001)
         for i in range(1,prob_b_rescaled.shape[1]):
             prob_b_rescaled[0,i]=prob_b_rescaled[0,i]+prob_b_rescaled[0,i-1]
-        draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.01)
+        draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.001)
         b = np.amin(np.where(draw_b<prob_b_rescaled)[1])
         b_tot = np.append(b_tot,b)
         if b == 1:
@@ -471,10 +471,10 @@ def Discrete_policy(zeta, mu, max_epoch, nTraj, option_space, action_space, size
             o_prob_tilde[0,o] = 1 - zeta + zeta/option_space
             
         prob_o = o_prob_tilde
-        prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.01)
+        prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.001)
         for i in range(1,prob_o_rescaled.shape[1]):
             prob_o_rescaled[0,i]=prob_o_rescaled[0,i]+prob_o_rescaled[0,i-1]
-        draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
+        draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.001)
         o = np.amin(np.where(draw_o<prob_o_rescaled)[1])
         o_tot = np.append(o_tot,o)
         
@@ -483,20 +483,20 @@ def Discrete_policy(zeta, mu, max_epoch, nTraj, option_space, action_space, size
             # draw action
             prob_u = pi_lo[int(state),o,:]
             prob_u = prob_u.reshape((1,action_space))
-            prob_u_rescaled = np.divide(prob_u,np.amin(prob_u)+0.01)
+            prob_u_rescaled = np.divide(prob_u,np.amin(prob_u)+0.001)
             for i in range(1,prob_u_rescaled.shape[1]):
                 prob_u_rescaled[0,i]=prob_u_rescaled[0,i]+prob_u_rescaled[0,i-1]
-            draw_u=np.divide(np.random.rand(),np.amin(prob_u)+0.01)
+            draw_u=np.divide(np.random.rand(),np.amin(prob_u)+0.001)
             u = np.amin(np.where(draw_u<prob_u_rescaled)[1])
             u_tot = np.append(u_tot,u)
             
             # given action, draw next state
             action = u
             prob_trans = P[int(state),action,:]
-            prob_trans_rescaled = np.divide(prob_trans,np.amin(prob_trans)+0.01)
+            prob_trans_rescaled = np.divide(prob_trans,np.amin(prob_trans)+0.001)
             for i in range(1,prob_trans_rescaled.shape[0]):
                 prob_trans_rescaled[i]=prob_trans_rescaled[i]+prob_trans_rescaled[i-1]
-            draw_obs=np.divide(np.random.rand(),np.amin(prob_trans)+0.01)
+            draw_obs=np.divide(np.random.rand(),np.amin(prob_trans)+0.001)
             obs = np.amin(np.where(draw_obs<prob_trans_rescaled))
             x = np.append(x, obs.reshape((1,size_input)), axis=0)
                   
@@ -505,10 +505,10 @@ def Discrete_policy(zeta, mu, max_epoch, nTraj, option_space, action_space, size
             state_plus1 = obs.reshape((1,size_input))
             prob_b = pi_b[int(state_plus1), o, :]
             prob_b = prob_b.reshape((1,2))
-            prob_b_rescaled = np.divide(prob_b,np.amin(prob_b)+0.01)
+            prob_b_rescaled = np.divide(prob_b,np.amin(prob_b)+0.001)
             for i in range(1,prob_b_rescaled.shape[1]):
                 prob_b_rescaled[0,i]=prob_b_rescaled[0,i]+prob_b_rescaled[0,i-1]
-            draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.01)
+            draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.001)
             b = np.amin(np.where(draw_b<prob_b_rescaled)[1])
             b_tot = np.append(b_tot,b)
             if b == 1:
@@ -525,10 +525,10 @@ def Discrete_policy(zeta, mu, max_epoch, nTraj, option_space, action_space, size
                 o_prob_tilde[0,o] = 1 - zeta + zeta/option_space
             
             prob_o = o_prob_tilde
-            prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.01)
+            prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.001)
             for i in range(1,prob_o_rescaled.shape[1]):
                 prob_o_rescaled[0,i]=prob_o_rescaled[0,i]+prob_o_rescaled[0,i-1]
-            draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
+            draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.001)
             o = np.amin(np.where(draw_o<prob_o_rescaled)[1])
             o_tot = np.append(o_tot,o)
 
