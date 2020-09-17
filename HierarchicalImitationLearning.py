@@ -116,6 +116,13 @@ class pi_b_discrete:
         prob_b = prob_b.reshape(1,len(prob_b))
         
         return prob_b
+    
+def get_discrete_policy(Theta):
+    pi_hi = pi_hi_discrete(Theta[0], Theta[1])
+    pi_lo = pi_lo_discrete(Theta[2], Theta[3], Theta[4], Theta[5])
+    pi_b = pi_b_discrete(Theta[6], Theta[7], Theta[8], Theta[9])
+    
+    return pi_hi, pi_lo, pi_b
 
 def Pi_hi(ot, Pi_hi_parameterization, state):
 
@@ -1097,42 +1104,52 @@ def BaumWelch_discrete(EV):
     P_Options = pi_hi_discrete(EV.Triple_init.theta_hi_1, EV.Triple_init.theta_hi_2)
     P_Actions = pi_lo_discrete(EV.Triple_init.theta_lo_1, EV.Triple_init.theta_lo_2,EV.Triple_init.theta_lo_3, EV.Triple_init.theta_lo_4)
     P_Termination = pi_b_discrete(EV.Triple_init.theta_b_1, EV.Triple_init.theta_b_2, EV.Triple_init.theta_b_3, EV.Triple_init.theta_b_4)
+
+    state_0_index = np.where(EV.TrainingSet[:,0] == 0)[0]
+    state_1_index = np.where(EV.TrainingSet[:,0] == 1)[0]
+
+    action_0_index = np.where(EV.labels[:]==0)[0]
+    action_1_index = np.where(EV.labels[:]==1)[0]
+    action_0_state_0_index = match_vectors(action_0_index, state_0_index)
+    action_1_state_0_index = match_vectors(action_1_index, state_0_index)
+    action_0_state_1_index = match_vectors(action_0_index, state_1_index)
+    action_1_state_1_index = match_vectors(action_1_index, state_1_index)
     
     for n in range(EV.N):
         print('iter', n+1, '/', EV.N)
         
         alpha = Alpha(EV.TrainingSet, EV.labels, EV.option_space, EV.termination_space, EV.mu, 
-                      EV.zeta, P_Options.policy, P_Actions.policy, P_Termination.policy)
+                          EV.zeta, P_Options.policy, P_Actions.policy, P_Termination.policy)
         beta = Beta(EV.TrainingSet, EV.labels, EV.option_space, EV.termination_space, EV.zeta, 
-                    P_Options.policy, P_Actions.policy, P_Termination.policy)
+                        P_Options.policy, P_Actions.policy, P_Termination.policy)
         gamma = Gamma(EV.TrainingSet, EV.option_space, EV.termination_space, alpha, beta)
         gamma_tilde = GammaTilde(EV.TrainingSet, EV.labels, beta, alpha, 
                                  P_Options.policy, P_Actions.policy, P_Termination.policy, EV.zeta, EV.option_space, EV.termination_space)
-            
-        print('Expectation done')
-        print('Starting maximization step')
-        optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
-        epochs = 10 #number of iterations for the maximization step
-            
-        gamma_tilde_reshaped = GammaTildeReshape(gamma_tilde, EV.option_space)
-        gamma_actions_false, gamma_actions_true = GammaReshapeActions(T, EV.option_space, EV.action_space, gamma, labels_reshaped)
-        gamma_reshaped_options = GammaReshapeOptions(T, EV.option_space, gamma)
     
+        # M step
+        gamma_state_0 = gamma[:,:,state_0_index]
+        gamma_state_1 = gamma[:,:,state_1_index]
+        theta_hi_1 = np.clip(np.divide(np.sum(gamma_state_0[0,1,:]),np.sum(gamma_state_0[:,1,:])),0,1)
+        theta_hi_2 = np.clip(np.divide(np.sum(gamma_state_1[1,1,:]),np.sum(gamma_state_1[:,1,:])),0,1)
     
-        # loss = hil.OptimizeLossAndRegularizerTot(epochs, TrainingSetTermination, NN_termination, gamma_tilde_reshaped, 
-        #                                          TrainingSetActions, NN_actions, gamma_actions_false, gamma_actions_true,
-        #                                          TrainingSet, NN_options, gamma_reshaped_options, eta, lambdas, T, optimizer, 
-        #                                          gamma, option_space, labels, size_input)
+        theta_lo_1 = np.clip(np.divide(np.sum(gamma[0,:,action_0_state_0_index]),np.sum(gamma_state_0[0,:,:])),0,1)
+        theta_lo_2 = np.clip(np.divide(np.sum(gamma[1,:,action_1_state_0_index]),np.sum(gamma_state_0[1,:,:])),0,1)
+        theta_lo_3 = np.clip(np.divide(np.sum(gamma[0,:,action_0_state_1_index]),np.sum(gamma_state_1[0,:,:])),0,1)
+        theta_lo_4 = np.clip(np.divide(np.sum(gamma[1,:,action_1_state_1_index]),np.sum(gamma_state_1[1,:,:])),0,1)
     
-        loss = OptimizeLossAndRegularizerTotBatch(epochs, TrainingSet_Termination, NN_Termination, gamma_tilde_reshaped, 
-                                                  TrainingSet_Actions, NN_Actions, gamma_actions_false, gamma_actions_true,
-                                                  EV.TrainingSet, NN_Options, gamma_reshaped_options, eta, lambdas, T, optimizer, 
-                                                  gamma, EV.option_space, EV.labels, EV.size_input, 32)
-
-        print('Maximization done, Total Loss:',float(loss))#float(loss_options+loss_action+loss_termination))
+        gamma_tilde_state_0 = gamma_tilde[:,:,state_0_index]
+        gamma_tilde_state_1 = gamma_tilde[:,:,state_1_index]
+        theta_b_1 = np.clip(np.divide(np.sum(gamma_tilde_state_0[0,0,:]),np.sum(gamma_tilde_state_0[0,:,:])),0,1)
+        theta_b_2 = np.clip(np.divide(np.sum(gamma_tilde_state_0[1,1,:]),np.sum(gamma_tilde_state_0[1,:,:])),0,1)
+        theta_b_3 = np.clip(np.divide(np.sum(gamma_tilde_state_1[0,0,:]),np.sum(gamma_tilde_state_1[0,:,:])),0,1)
+        theta_b_4 = np.clip(np.divide(np.sum(gamma_tilde_state_1[1,1,:]),np.sum(gamma_tilde_state_1[1,:,:])),0,1)
+    
+        P_Options = pi_hi_discrete(theta_hi_1, theta_hi_2)
+        P_Actions = pi_lo_discrete(theta_lo_1, theta_lo_2, theta_lo_3, theta_lo_4)
+        P_Termination = pi_b_discrete(theta_b_1, theta_b_2, theta_b_3, theta_b_4)
 
         
-    return NN_Termination, NN_Actions, NN_Options
+    return P_Termination, P_Actions, P_Options
     
     
   
