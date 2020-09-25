@@ -40,9 +40,9 @@ size_input = 1
 zeta = 0.001
 
 mu = np.array([0.5, 0.5])
-max_epoch = 150
+max_epoch = 0
 
-nTraj = 100
+nTraj = 10 #100
 
 std = np.empty(0)
 aver_reward = np.empty(0)
@@ -52,7 +52,7 @@ LabelsDC = [[None]*1 for _ in range(10)]
 for k in range(10):
     max_epoch = max_epoch + 50
     reward = np.empty(0)
-    [trajDC, controlDC, OptionDC, TerminationDC] = sim.Discrete_policy(zeta, mu, max_epoch, nTraj, option_space, action_space, size_input, P, pi_hi, pi_lo, pi_b)
+    trajDC, controlDC, OptionDC, TerminationDC = sim.Discrete_policy(zeta, mu, max_epoch, nTraj, option_space, action_space, size_input, P, pi_hi, pi_lo, pi_b)
     dataDC = np.empty((0,1))
     labelsDC = np.empty((0))
     
@@ -70,8 +70,8 @@ for k in range(10):
 # %% Expert Performance
 
 plt.figure()
-plt.plot(np.linspace(20000,65000,10), aver_reward, 'k', color='#CC4F1B')
-plt.fill_between(np.linspace(20000,65000,10), aver_reward-std, aver_reward+std,
+plt.plot(np.linspace(len(TrainingSetDC[0]),len(TrainingSetDC[-1]),len(TrainingSetDC)), aver_reward, 'k', color='#CC4F1B')
+plt.fill_between(np.linspace(len(TrainingSetDC[0]),len(TrainingSetDC[-1]),len(TrainingSetDC)), aver_reward-std, aver_reward+std,
                 alpha=0.5, edgecolor='#CC4F1B', facecolor='#FF9848')
 
 plt.ylim(0,1.1)
@@ -82,7 +82,7 @@ plt.ylim(0,1.1)
 Triple_expert = hil.Triple_discrete(theta_hi_1, theta_hi_2, theta_lo_1, theta_lo_2, theta_lo_3, theta_lo_4, theta_b_1, theta_b_2, theta_b_3, theta_b_4)
 
 with open('Plots/Expert_performance.npy', 'wb') as f:
-    np.save(f,[aver_reward, std, Triple_expert])
+    np.save(f,[aver_reward, std, Triple_expert, TrainingSetDC, LabelsDC])
        
 # %% initialization Learning for Batch BW INIT 1
 
@@ -112,9 +112,9 @@ ETA, LAMBDAS = np.meshgrid(gain_eta, gain_lambdas)
 LAMBDAS = LAMBDAS.reshape(len(gain_lambdas)*len(gain_eta),)
 ETA = ETA.reshape(len(gain_lambdas)*len(gain_eta),)
 
-EV = hil.Experiment_design_discrete(labelsDC, TrainingSetDC, size_input, action_space, option_space, termination_space, N, zeta, mu, Triple_init1, gain_lambdas, gain_eta, 'discrete', max_epoch)
+EV = hil.Experiment_design_discrete(LabelsDC, TrainingSetDC, size_input, action_space, option_space, termination_space, N, zeta, mu, Triple_init1, gain_lambdas, gain_eta, 'discrete', max_epoch)
 
-# %% HIL
+# %% HIL BATCH BW INIT 1
 
 Options_list = []
 Actions_list = []
@@ -146,7 +146,8 @@ theta_b_3_list.append(theta_b_3)
 theta_b_4_list.append(theta_b_4)
 
 for i in range(len(TrainingSetDC)):
-    EV.TrainingSet = TrainingSetDC[i]
+    EV.TrainingSet = TrainingSetDC[i] # check the parameters learnt for a different amount of training data
+    EV.labels = LabelsDC[i]
 
     P_Termination, P_Actions, P_Options = hil.BaumWelch_discrete(EV)
 
@@ -167,7 +168,7 @@ for i in range(len(TrainingSetDC)):
     theta_b_3_list.append(P_Termination.theta_3)
     theta_b_4_list.append(P_Termination.theta_4)
 
-# %%
+# %% reprocess and store the parameters INIT 1
 
 Parameters = [[None]*1 for _ in range(10)]
 
@@ -233,9 +234,9 @@ ETA, LAMBDAS = np.meshgrid(gain_eta, gain_lambdas)
 LAMBDAS = LAMBDAS.reshape(len(gain_lambdas)*len(gain_eta),)
 ETA = ETA.reshape(len(gain_lambdas)*len(gain_eta),)
 
-EV = hil.Experiment_design_discrete(labelsDC, TrainingSetDC, size_input, action_space, option_space, termination_space, N, zeta, mu, Triple_init1, gain_lambdas, gain_eta, 'discrete', max_epoch)
+EV = hil.Experiment_design_discrete(LabelsDC, TrainingSetDC, size_input, action_space, option_space, termination_space, N, zeta, mu, Triple_init1, gain_lambdas, gain_eta, 'discrete', max_epoch)
 
-# %% HIL
+# %% HIL BATCH BW INIT 2
 
 Options_list = []
 Actions_list = []
@@ -268,6 +269,7 @@ theta_b_4_list.append(theta_b_4)
 
 for i in range(len(TrainingSetDC)):
     EV.TrainingSet = TrainingSetDC[i]
+    EV.labels = LabelsDC[i]
 
     P_Termination, P_Actions, P_Options = hil.BaumWelch_discrete(EV)
 
@@ -288,7 +290,7 @@ for i in range(len(TrainingSetDC)):
     theta_b_3_list.append(P_Termination.theta_3)
     theta_b_4_list.append(P_Termination.theta_4)
 
-# %%
+# %% reprocess and store the parameters INIT 1
 
 Parameters = [[None]*1 for _ in range(10)]
 
@@ -325,6 +327,7 @@ Parameters[9]= Theta_b_4
 
 with open('Learnt_Parameters/learned_thetas_batch_BW_init{}.npy'.format(init), 'wb') as f:
     np.save(f,Parameters)
+
 
 
 

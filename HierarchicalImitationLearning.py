@@ -157,9 +157,9 @@ def Pi_b(b, Pi_b_parameterization, state_and_option):
     return b_prob
     
 def Pi_combined(ot, ot_past, a, b, Pi_hi_parameterization, Pi_lo_parameterization, Pi_b_parameterization, state, zeta, option_space):
-    Pi_hi_eval = Pi_hi_bar(b, ot, ot_past, Pi_hi_parameterization, state, zeta, option_space)
-    Pi_lo_eval = Pi_lo(a, Pi_lo_parameterization, np.append(state, [[ot]],axis=1))
-    Pi_b_eval = Pi_b(b, Pi_b_parameterization, np.append(state, [[ot]],axis=1))
+    Pi_hi_eval = np.clip(Pi_hi_bar(b, ot, ot_past, Pi_hi_parameterization, state, zeta, option_space),0.01,1)
+    Pi_lo_eval = np.clip(Pi_lo(a, Pi_lo_parameterization, np.append(state, [[ot]],axis=1)),0.01,1)
+    Pi_b_eval = np.clip(Pi_b(b, Pi_b_parameterization, np.append(state, [[ot]],axis=1)),0.01,1)
     output = Pi_hi_eval*Pi_lo_eval*Pi_b_eval
     
     return output
