@@ -25,7 +25,7 @@ pi_lo = np.array([[theta_lo_1, 1-theta_lo_1], [1-theta_lo_2, theta_lo_2], [theta
 pi_lo = pi_lo.reshape((2,2,2))
 action_space = 2
 
-P = np.array([[0.9, 0.1], [0.5, 0.5], [0.4, 0.6], [0.95, 0.05]])
+P = np.array([[0.9, 0.1], [0.5, 0.5], [0.5, 0.5], [0.95, 0.05]])
 P = P.reshape((2,2,2))
 
 theta_b_1 = 0.1
@@ -42,7 +42,7 @@ zeta = 0.001
 mu = np.array([0.5, 0.5])
 max_epoch = 0
 
-nTraj = 10 #100
+nTraj = 100
 
 std = np.empty(0)
 aver_reward = np.empty(0)
@@ -290,7 +290,7 @@ for i in range(len(TrainingSetDC)):
     theta_b_3_list.append(P_Termination.theta_3)
     theta_b_4_list.append(P_Termination.theta_4)
 
-# %% reprocess and store the parameters INIT 1
+# %% reprocess and store the parameters INIT 2
 
 Parameters = [[None]*1 for _ in range(10)]
 

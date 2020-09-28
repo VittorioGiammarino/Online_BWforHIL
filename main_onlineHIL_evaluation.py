@@ -18,7 +18,7 @@ init = 1
 option_space=2
 action_space = 2
 
-P = np.array([[0.9, 0.1], [0.5, 0.5], [0.4, 0.6], [0.95, 0.05]])
+P = np.array([[0.9, 0.1], [0.5, 0.5], [0.5, 0.5], [0.95, 0.05]])
 P = P.reshape((2,2,2))
 
 size_input = 1
@@ -53,7 +53,7 @@ init = 2
 option_space=2
 action_space = 2
 
-P = np.array([[0.9, 0.1], [0.5, 0.5], [0.4, 0.6], [0.95, 0.05]])
+P = np.array([[0.9, 0.1], [0.5, 0.5], [0.5, 0.5], [0.95, 0.05]])
 P = P.reshape((2,2,2))
 
 size_input = 1
@@ -184,7 +184,7 @@ plt.plot(np.concatenate((np.zeros(1),np.linspace(len(TrainingSetDC[0]),len(Train
 plt.plot(np.concatenate((np.zeros(1),np.linspace(len(TrainingSetDC[0]),len(TrainingSetDC[-1]),len(TrainingSetDC)))), Triple_Expert.theta_b_4*np.ones(11), '--g', label='$\\theta^{4*}_{b}$')
 plt.plot(np.concatenate((np.zeros(1),np.linspace(len(TrainingSetDC[0]),len(TrainingSetDC[-1]),len(TrainingSetDC)))), Parameters2[9,:], '--b', label='$\\theta^{4}_{b}$')
 plt.ylim(0,1.1)
-plt.legend(loc='middle center', fontsize='small', ncol=4)
+plt.legend(loc='best', fontsize='small', ncol=4)
 plt.xlabel('Data samples')
 plt.ylabel('$\\theta_{b}$')
 plt.savefig('Figures/Comparison_Expert_policy_learnt_theta_b_init2.eps', format='eps')
