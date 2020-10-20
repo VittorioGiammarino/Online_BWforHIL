@@ -11,5 +11,10 @@ import World
 # %% 
 
 expert = World.TwoRewards.Expert()
-UTot, UR1, UR2, UBoth = expert.ComputeFlatPolicy()
+# UTot, UR1, UR2, UBoth = expert.ComputeFlatPolicy()
+
+#%%
+ss = expert.StateSpace()
+pi_hi, pi_lo, pi_b = expert.HierarchicalPolicy()
+expert.PlotHierachicalPolicy()
 

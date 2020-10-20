@@ -859,3 +859,205 @@ class TwoRewards:
             TwoRewards.Expert.PlotPolicy(self, UBoth, 'Figures/FiguresExpert/Expert_Both.eps')
             
             return UTot, UR1, UR2, UBoth
+        
+        def StateSpace(self):
+            stateSpace = np.empty((0,3),int)
+
+            for m in range(0,self.Environment.map.shape[0]):
+                for n in range(0,self.Environment.map.shape[1]):
+                    for k in range(4):
+                        if self.Environment.map[m,n] != self.Environment.TREE:
+                            stateSpace = np.append(stateSpace, [[m, n, k]], 0)
+                        
+            return stateSpace
+        
+        def generate_pi_hi(self):
+            stateSpace = TwoRewards.Expert.StateSpace(self)
+            pi_hi = np.empty((0,1),int)
+            for i in range(len(stateSpace)):
+                if stateSpace[i,1]<5:
+                    pi_hi = np.append(pi_hi, [[0]], 0)
+                elif stateSpace[i,1]>5:
+                    pi_hi = np.append(pi_hi, [[1]], 0)
+                elif stateSpace[i,2] == 0:
+                    pi_hi = np.append(pi_hi, [[0]], 0)
+                else:
+                    pi_hi = np.append(pi_hi, [[1]], 0)
+            
+            
+            pi_hi_encoded = np.zeros((len(pi_hi), pi_hi.max()+1))
+            pi_hi_encoded[np.arange(len(pi_hi)),pi_hi[:,0]] = 1
+            
+            return pi_hi_encoded
+        
+        def generate_pi_lo(self, Uopt, Ugeneral, pi_hi, n_op):
+            stateSpace = TwoRewards.Expert.StateSpace(self)
+            pi_lo = np.empty((0,1),int)
+            j=0
+
+            for i in range(len(pi_hi)):
+                if pi_hi[i,n_op]==1:
+                    psi = stateSpace[i,2]
+                    pi_lo = np.append(pi_lo, [[int(Uopt[j,psi])]], 0)
+                    if i!=0 and np.mod(i,4)==0:
+                        j = j+1
+                else:
+                    pi_lo = np.append(pi_lo, [[int(Ugeneral[j,0])]], 0)
+                    if i!=0 and np.mod(i,4)==0:
+                        j = j+1
+                        
+            pi_lo_encoded = np.zeros((len(pi_lo), pi_lo.max()+1,1))
+            pi_lo_encoded[np.arange(len(pi_lo)),pi_lo[:,0],0] = 1
+            
+            return pi_lo_encoded
+        
+        def generate_pi_b(self):
+            stateSpace = TwoRewards.Expert.StateSpace(self)
+            pi_b = np.empty((0,1),int)
+            for i in range(len(stateSpace)):
+                if stateSpace[i,1]==5:
+                    pi_b = np.append(pi_b, [[1]], 0)
+                else:
+                    pi_b = np.append(pi_b, [[0]], 0)
+
+            pi_b_encoded = np.zeros((len(pi_b), pi_b.max()+1, 1))
+            pi_b_encoded[np.arange(len(pi_b)),pi_b[:,0],0] = 1
+            
+            return pi_b_encoded
+        
+        def HierarchicalPolicy(self):
+            UTot, UR1, UR2, UBoth = TwoRewards.Expert.ComputeFlatPolicy(self)
+            pi_hi = TwoRewards.Expert.generate_pi_hi(self)
+            pi_lo1 = TwoRewards.Expert.generate_pi_lo(self, UTot, UR1, pi_hi, 0)
+            pi_lo2 = TwoRewards.Expert.generate_pi_lo(self, UTot, UR2, pi_hi, 1)
+            pi_lo = np.concatenate((pi_lo1, pi_lo2), 2)
+            pi_b1 = TwoRewards.Expert.generate_pi_b(self)
+            pi_b2 = TwoRewards.Expert.generate_pi_b(self)
+            pi_b = np.concatenate((pi_b1, pi_b2), 2)
+            
+            
+            return pi_hi, pi_lo, pi_b
+        
+        def PlotOptions(self, pi_hi, name):
+            mapsize = self.Environment.map.shape
+            #count trees
+            ntrees=0;
+            trees = np.empty((0,2),int)
+            shooters = np.empty((0,2),int)
+            nshooters=0
+            for i in range(0,mapsize[0]):
+                for j in range(0,mapsize[1]):
+                    if self.Environment.map[i,j]==self.Environment.TREE:
+                        trees = np.append(trees, [[j, i]], 0)
+                        ntrees += 1
+                    if self.Environment.map[i,j]==self.Environment.SHOOTER:
+                        shooters = np.append(shooters, [[j, i]], 0)
+                        nshooters+=1
+
+            #R1
+            R1Index=self.R1_STATE_INDEX
+            i_R1 = self.Environment.stateSpace[R1Index,0]
+            j_R1 = self.Environment.stateSpace[R1Index,1]
+            R1 = np.array([j_R1, i_R1])
+            #base
+            BaseIndex=self.Environment.BaseStateIndex()
+            i_base = self.Environment.stateSpace[BaseIndex,0]
+            j_base = self.Environment.stateSpace[BaseIndex,1]
+            base = np.array([j_base, i_base])
+            #R2
+            R2Index = self.R2_STATE_INDEX
+            i_R2 = self.Environment.stateSpace[R2Index,0]
+            j_R2 = self.Environment.stateSpace[R2Index,1]
+            R2 = np.array([j_R2, i_R2])
+
+            # Plot
+            plt.figure()
+            plt.plot([0, mapsize[1], mapsize[1], 0, 0],[0, 0, mapsize[0], mapsize[0], 0],'k-')
+            plt.plot([base[0], base[0], base[0]+1, base[0]+1, base[0]],
+                     [base[1], base[1]+1, base[1]+1, base[1], base[1]],'k-')
+            plt.plot([R1[0], R1[0], R1[0]+1, R1[0]+1, R1[0]],
+                     [R1[1], R1[1]+1, R1[1]+1, R1[1], R1[1]],'k-')
+            plt.plot([R2[0], R2[0], R2[0]+1, R2[0]+1, R2[0]],
+                     [R2[1], R2[1]+1, R2[1]+1, R2[1], R2[1]],'k-')
+
+            for i in range(0,nshooters):
+                plt.plot([shooters[i,0], shooters[i,0], shooters[i,0]+1, shooters[i,0]+1, shooters[i,0]],
+                         [shooters[i,1], shooters[i,1]+1, shooters[i,1]+1, shooters[i,1], shooters[i,1]],'k-')
+
+            for i in range(0,ntrees):
+                plt.plot([trees[i,0], trees[i,0], trees[i,0]+1, trees[i,0]+1, trees[i,0]],
+                         [trees[i,1], trees[i,1]+1, trees[i,1]+1, trees[i,1], trees[i,1]],'k-')
+
+            plt.fill([base[0], base[0], base[0]+1, base[0]+1, base[0]],
+                     [base[1], base[1]+1, base[1]+1, base[1], base[1]],'r')
+            plt.fill([R1[0], R1[0], R1[0]+1, R1[0]+1, R1[0]],
+                     [R1[1], R1[1]+1, R1[1]+1, R1[1], R1[1]],'y')
+            plt.fill([R2[0], R2[0], R2[0]+1, R2[0]+1, R2[0]],
+                     [R2[1], R2[1]+1, R2[1]+1, R2[1], R2[1]],'y')
+
+            for i in range(0,nshooters):
+                plt.fill([shooters[i,0], shooters[i,0], shooters[i,0]+1, shooters[i,0]+1, shooters[i,0]],
+                         [shooters[i,1], shooters[i,1]+1, shooters[i,1]+1, shooters[i,1], shooters[i,1]],'c')
+
+            for i in range(0,ntrees):
+                plt.fill([trees[i,0], trees[i,0], trees[i,0]+1, trees[i,0]+1, trees[i,0]],
+                         [trees[i,1], trees[i,1]+1, trees[i,1]+1, trees[i,1], trees[i,1]],'g')
+
+            plt.text(base[0]+0.5, base[1]+0.5, 'B')
+            plt.text(R1[0]+0.5, R1[1]+0.5, 'R1')
+            plt.text(R2[0]+0.5, R2[1]+0.5, 'R2')
+            for i in range(0,nshooters):
+                plt.text(shooters[i,0]+0.5, shooters[i,1]+0.5, 'S')
+                
+            for s in range(0,len(pi_hi)):
+                if pi_hi[s]==0:
+                    c = 'c'
+                elif pi_hi[s]==1:
+                    c = 'lime'
+                elif pi_hi[s]==2:
+                    c = 'y'    
+                plt.fill([self.Environment.stateSpace[s,1], self.Environment.stateSpace[s,1], self.Environment.stateSpace[s,1]+0.9, 
+                          self.Environment.stateSpace[s,1]+0.9, self.Environment.stateSpace[s,1]],
+                         [self.Environment.stateSpace[s,0], self.Environment.stateSpace[s,0]+0.9, self.Environment.stateSpace[s,0]+0.9, 
+                          self.Environment.stateSpace[s,0], self.Environment.stateSpace[s,0]],c)            
+ 
+            
+            plt.savefig(name, format='eps')
+
+        
+        def PlotHierachicalPolicy(self):
+            pi_hi, pi_lo, pi_b = TwoRewards.Expert.HierarchicalPolicy(self)
+            pi_hi = np.argmax(pi_hi,1)
+            pi_b = np.argmax(pi_b,1)
+            pi_lo = np.argmax(pi_lo,1)
+            option_space = pi_lo.shape[1]
+            PI_HI = np.empty((0),int)
+            PI_B = np.empty((0),int)
+            U1 = np.empty((0,4,1),int)
+            U2 = np.empty((0,4,1),int)
+            for i in range(0,len(pi_lo),4):
+                PI_HI = np.append(PI_HI, pi_hi[i])
+                PI_B = np.append(PI_B, pi_b[i,0])
+                u1 = pi_lo[i:i+4,0].reshape(1,4,1)
+                u2 = pi_lo[i:i+4,1].reshape(1,4,1)
+                U1 = np.append(U1,u1,0)
+                U2 = np.append(U2,u2,0)
+            U = np.concatenate((U1,U2),2)
+            
+            for option in range(option_space):
+                for psi in range(4):
+                    TwoRewards.Expert.PlotPolicy(self, U[:,psi,option], 'Figures/FiguresExpert/Hierarchical/Expert_option{}_psi{}.eps'.format(option, psi))
+                    
+            TwoRewards.Expert.PlotOptions(self, PI_HI, 'Figures/FiguresExpert/Hierarchical/Expert_High_policy.eps')
+            TwoRewards.Expert.PlotOptions(self, PI_B, 'Figures/FiguresExpert/Hierarchical/Expert_Termination_policy.eps')
+            
+        class Simulation:
+            
+            
+            
+            
+            
+            
+            
+            
+            
