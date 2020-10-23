@@ -868,8 +868,7 @@ class TwoRewards:
                     pi_hi = np.append(pi_hi, [[0]], 0)
                 else:
                     pi_hi = np.append(pi_hi, [[1]], 0)
-            
-            
+                 
             pi_hi_encoded = np.zeros((len(pi_hi), pi_hi.max()+1))
             pi_hi_encoded[np.arange(len(pi_hi)),pi_hi[:,0]] = 1
             
