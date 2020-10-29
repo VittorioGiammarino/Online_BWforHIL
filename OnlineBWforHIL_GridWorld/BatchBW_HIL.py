@@ -319,5 +319,110 @@ class BatchHIL:
                                                         pi_hi, pi_lo, pi_b, 
                                                         state, self.zeta, self.option_space, self.termination_space)
         return gamma_tilde
+    
+    def TrainingSetID(self):
+        TrainingSetID = np.empty((0,1))
+        for i in range(len(self.TrainingSet)):
+            ID = BatchHIL.FindStateIndex(self,self.TrainingSet[i,:].reshape(1,self.size_input))
+            TrainingSetID = np.append(TrainingSetID, [[ID]], axis=0)
+            
+        return TrainingSetID
+    
+    def UpdatePiHi(self, Old_pi_hi, gamma, TrainingSetID):
+        New_pi_hi = np.zeros((Old_pi_hi.shape[0], Old_pi_hi.shape[1]))
+        stateSpace = self.expert.StateSpace()
+        temp_theta = np.zeros((1,self.option_space))
+            
+        for stateID in range(len(stateSpace)):
+            if np.mod(stateID,100)==0:
+                print('PI HIGH, state: ', stateID, '/', len(stateSpace))
+            for option in range(self.option_space):
+                state_indexes_inDataSet = np.where(TrainingSetID[:,0] == stateID)[0]
+                
+                if len(state_indexes_inDataSet)==0:
+                    temp_theta[0,option] = Old_pi_hi[stateID,option]
+                else:
+                    temp_theta[0,option] = np.clip(np.divide(np.sum(gamma[option,1,state_indexes_inDataSet]), 
+                                                             np.sum(gamma[:,1,state_indexes_inDataSet])),0,1)
+                    
+                    
+            temp_theta = np.divide(temp_theta, np.sum(temp_theta))
+            New_pi_hi[stateID,:] = temp_theta
+        
+        return New_pi_hi
+    
+    def UpdatePiLo(self, Old_pi_lo, gamma, TrainingSetID):
+        New_pi_lo = np.zeros((Old_pi_lo.shape[0], Old_pi_lo.shape[1], Old_pi_lo.shape[2]))
+        stateSpace = self.expert.StateSpace()
+        temp_theta = np.zeros((1,self.action_space))
+        
+        for option in range(self.option_space):
+            for stateID in range(len(stateSpace)):
+                if np.mod(stateID,100)==0:
+                    print('PI LOW, option: ', option+1, '/', self.option_space,'; state: ', stateID, '/', len(stateSpace))
+                for action in range(self.action_space):
+                    state_indexes_inDataSet = np.where(TrainingSetID[:,0] == stateID)[0]
+                    action_indexes_inLabels = np.where(self.Labels[:,0] == action)[0]
+                    ActionState_indexes = BatchHIL.match_vectors(state_indexes_inDataSet, action_indexes_inLabels)
+                
+                    if len(ActionState_indexes)==0:
+                        temp_theta[0,action] = Old_pi_lo[stateID,action,option]
+                    else:
+                        temp_theta[0,action] = np.clip(np.divide(np.sum(gamma[option,:,ActionState_indexes]), 
+                                                                 np.sum(gamma[option,:,state_indexes_inDataSet])),0,1)
+                    
+                    
+                temp_theta = np.divide(temp_theta, np.sum(temp_theta))
+                New_pi_lo[stateID,:,option] = temp_theta
+        
+        return New_pi_lo
+    
+    def UpdatePiB(self, Old_pi_b, gamma_tilde, TrainingSetID):
+        New_pi_b = np.zeros((Old_pi_b.shape[0], Old_pi_b.shape[1], Old_pi_b.shape[2]))
+        stateSpace = self.expert.StateSpace()
+        temp_theta = np.zeros((1,self.termination_space))
+            
+        for option in range(self.option_space):
+            for stateID in range(len(stateSpace)):
+                if np.mod(stateID,100)==0:
+                    print('PI B, option: ', option+1, '/', self.option_space,'; state: ', stateID, '/', len(stateSpace))
+                for termination_boolean in range(self.termination_space):
+                    state_indexes_inDataSet = np.where(TrainingSetID[:,0] == stateID)[0]
+                
+                    if len(state_indexes_inDataSet)==0:
+                        temp_theta[0,termination_boolean] = Old_pi_b[stateID,termination_boolean,option]
+                    else:
+                        temp_theta[0,termination_boolean] = np.clip(np.divide(np.sum(gamma_tilde[option,termination_boolean,state_indexes_inDataSet]), 
+                                                                 np.sum(gamma_tilde[option,:,state_indexes_inDataSet])),0,1)
+                           
+                temp_theta = np.divide(temp_theta, np.sum(temp_theta))
+                New_pi_b[stateID,:,option] = temp_theta
+        
+        return New_pi_b
+    
+    def Baum_Welch(self, N):
+        TrainingSetID = BatchHIL.TrainingSetID(self)
+        pi_hi = BatchHIL.initialize_pi_hi(self)
+        pi_b = BatchHIL.initialize_pi_b(self)
+        pi_lo = BatchHIL.initialize_pi_lo(self)
+        
+        for i in range(N):
+            pi_hi_agent = PI_HI(pi_hi) 
+            pi_b_agent = PI_B(pi_b)
+            pi_lo_agent = PI_LO(pi_lo)
+            
+            # E-step
+            alpha = BatchHIL.Alpha(self, pi_hi_agent.Policy , pi_b_agent.Policy , pi_lo_agent.Policy)
+            beta = BatchHIL.Beta(self, pi_hi_agent.Policy , pi_b_agent.Policy , pi_lo_agent.Policy)
+            gamma = BatchHIL.Gamma(self, alpha, beta)
+            gamma_tilde = BatchHIL.GammaTilde(self, alpha, beta, pi_hi_agent.Policy , pi_b_agent.Policy , pi_lo_agent.Policy)
+            
+            # M-step
+            pi_hi = BatchHIL.UpdatePiHi(self, pi_hi_agent.pi_hi, gamma, TrainingSetID)
+            pi_lo = BatchHIL.UpdatePiLo(self, pi_lo_agent.pi_lo, gamma, TrainingSetID)
+            pi_b = BatchHIL.UpdatePiB(self, pi_b_agent.pi_b, gamma_tilde, TrainingSetID)
+        
+        return pi_hi, pi_lo, pi_b
+        
             
         
