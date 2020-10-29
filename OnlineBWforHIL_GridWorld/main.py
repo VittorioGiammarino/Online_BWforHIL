@@ -40,5 +40,47 @@ BatchSim.HILVideoSimulation(controlBatch[best][:], trajBatch[best][:],
 Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space)
 T_min = 1000
 pi_hi_online, pi_lo_online, pi_b_online = Agent_OnlineHIL.Online_Baum_Welch(T_min)
+OnlineSim = expert.Simulation(pi_hi_online, pi_lo_online, pi_b_online)
+[trajOnline, controlOnline, OptionsOnline, 
+ TerminationOnline, psiOnline, rewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
+best = np.argmax(rewardOnline)  
+OnlineSim.HILVideoSimulation(controlOnline[best][:], trajOnline[best][:], 
+                             OptionsOnline[best][:], psiOnline[best][:],"Videos/VideosOnlineAgent/sim_OnlineBW.mp4")
+
+# %% Save Model
+
+with open('Models/Saved_Model_Expert/pi_hi.npy', 'wb') as f:
+    np.save(f, pi_hi_expert)
+    
+with open('Models/Saved_Model_Expert/pi_lo.npy', 'wb') as f:
+    np.save(f, pi_lo_expert)
+
+with open('Models/Saved_Model_Expert/pi_b.npy', 'wb') as f:
+    np.save(f, pi_b_expert)    
+    
+with open('Models/Saved_Model_Batch/pi_hi.npy', 'wb') as f:
+    np.save(f, pi_hi_batch)
+    
+with open('Models/Saved_Model_Batch/pi_lo.npy', 'wb') as f:
+    np.save(f, pi_lo_batch)
+
+with open('Models/Saved_Model_Batch/pi_b.npy', 'wb') as f:
+    np.save(f, pi_b_batch)    
+    
+with open('Models/Saved_Model_Online/pi_hi.npy', 'wb') as f:
+    np.save(f, pi_hi_online)
+    
+with open('Models/Saved_Model_Online/pi_lo.npy', 'wb') as f:
+    np.save(f, pi_lo_online)
+
+with open('Models/Saved_Model_Online/pi_b.npy', 'wb') as f:
+    np.save(f, pi_b_online)    
+    
+
+    
+ 
+
+
+
 
 
