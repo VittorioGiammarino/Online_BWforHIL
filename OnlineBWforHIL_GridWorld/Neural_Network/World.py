@@ -1049,10 +1049,9 @@ class TwoRewards:
                 self.expert = TwoRewards.Expert()
                 
             def PlotHierachicalPolicy(self, NameFilePI_HI, NameFilePI_LO, NameFilePI_B):
-                pi_hi = np.argmax(self.pi_hi,1)
-                pi_b = np.argmax(self.pi_b,1)
-                pi_lo = np.argmax(self.pi_lo,1)
-                option_space = pi_lo.shape[1]
+                stateSpace = self.expert.StateSpace()
+                pi_hi = np.argmax(self.pi_hi(stateSpace).numpy(),1)
+                option_space = len(self.pi_lo)
                 psi_space = 4
                 PI_HI = np.empty((0,psi_space,1),int)
                 PI_B = []
@@ -1061,13 +1060,15 @@ class TwoRewards:
                     PI_LO.append(np.empty((0,psi_space,1),int))
                 for i in range(2):
                     PI_B.append(np.empty((0,psi_space,1),int))
-                for i in range(0,len(pi_lo),psi_space):
+                for i in range(0,len(pi_hi),psi_space):
                     pi_hi_temp = pi_hi[i:i+psi_space].reshape(1,psi_space,1)
                     PI_HI = np.append(PI_HI, pi_hi_temp, 0)
                     for option in range(option_space):
-                        pi_b_temp = pi_b[i:i+psi_space,option].reshape(1,psi_space,1)
+                        pi_b = np.argmax(self.pi_b[option](stateSpace).numpy(),1)
+                        pi_b_temp = pi_b[i:i+psi_space].reshape(1,psi_space,1)
                         PI_B[option] = np.append(PI_B[option], pi_b_temp, 0)
-                        pi_lo_temp = pi_lo[i:i+psi_space,option].reshape(1,psi_space,1)
+                        pi_lo = np.argmax(self.pi_lo[option](stateSpace).numpy(),1)
+                        pi_lo_temp = pi_lo[i:i+psi_space].reshape(1,psi_space,1)
                         PI_LO[option] = np.append(PI_LO[option], pi_lo_temp, 0)
             
                 for option in range(option_space):
@@ -1079,9 +1080,8 @@ class TwoRewards:
                         
                 for psi in range(psi_space):
                     self.expert.PlotOptions(PI_HI[:,psi,0], NameFilePI_HI.format(psi))
-                                 
-                
-        class Simulation:
+                    
+        class Simulation_tabular:
             def __init__(self, pi_hi, pi_lo, pi_b):
                 option_space = pi_hi.shape[1]
                 self.option_space = option_space
@@ -1211,7 +1211,7 @@ class TwoRewards:
                             r = r + 1 
             
                         # Randomly update the reward
-                        psi = TwoRewards.Expert.Simulation.UpdateReward(self, psi, x[k])
+                        psi = TwoRewards.Expert.Simulation_tabular.UpdateReward(self, psi, x[k])
                         psi_tot = np.append(psi_tot, psi)
             
                         # Select Termination
@@ -1372,9 +1372,304 @@ class TwoRewards:
                 ani = animation.ArtistAnimation(fig, ims, interval=1200, blit=True,
                                                 repeat_delay=2000)
                 ani.save(name_video)
+                                 
+                
+        class Simulation_NN:
+            def __init__(self, pi_hi, pi_lo, pi_b):
+                option_space = len(pi_lo)
+                self.option_space = option_space
+                self.mu = np.ones(option_space)*np.divide(1,option_space)
+                self.zeta = 0.0001
+                self.Environment = TwoRewards.Environment()
+                self.initial_state = self.Environment.BaseStateIndex()
+                self.P = self.Environment.ComputeTransitionProbabilityMatrix()
+                self.stateSpace = self.Environment.stateSpace
+                self.R2_STATE_INDEX = self.Environment.R2StateIndex()
+                self.R1_STATE_INDEX = self.Environment.R1StateIndex()
+                self.pi_hi = pi_hi
+                self.pi_lo = pi_lo
+                self.pi_b = pi_b
+                
+            def UpdateReward(self, psi, x):
+                epsilon1 = 0.9
+                u1 = np.random.rand()
+                epsilon2 = 0.8
+                u2 = np.random.rand()
+    
+                if psi == 0 and u2 > epsilon2:
+                    psi = 2
+                elif psi == 1 and u1 > epsilon1:
+                    psi = 2
+                elif psi == 3 and u1 > epsilon1:
+                    psi = 0
+                elif psi == 3 and u2 > epsilon2:
+                    psi = 1
+                elif psi == 3 and u1 > epsilon1 and u2 > epsilon2:
+                    psi = 2
+        
+                if psi == 0 and x == self.R1_STATE_INDEX:
+                    psi = 3
+                elif psi == 1 and x == self.R2_STATE_INDEX:
+                    psi = 3 
+                elif psi == 2 and x == self.R1_STATE_INDEX:
+                    psi = 1
+                elif psi == 2 and x == self.R2_STATE_INDEX:
+                    psi = 0
+        
+                return psi
+                
+            def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories):
+                traj = [[None]*1 for _ in range(number_of_trajectories)]
+                control = [[None]*1 for _ in range(number_of_trajectories)]
+                Option = [[None]*1 for _ in range(number_of_trajectories)]
+                Termination = [[None]*1 for _ in range(number_of_trajectories)]
+                reward = np.empty((0,0),int)
+                psi_evolution = [[None]*1 for _ in range(number_of_trajectories)]
+    
+                for t in range(0,number_of_trajectories):
+        
+                    x = np.empty((0,0),int)
+                    x = np.append(x, self.initial_state)
+                    u_tot = np.empty((0,0))
+                    o_tot = np.empty((0,0),int)
+                    b_tot = np.empty((0,0),int)
+                    psi_tot = np.empty((0,0),int)
+                    psi = 3
+                    psi_tot = np.append(psi_tot, psi)
+                    r=0
+        
+                    # Initial Option
+                    prob_o = self.mu
+                    prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.01)
+                    for i in range(1,prob_o_rescaled.shape[0]):
+                        prob_o_rescaled[i]=prob_o_rescaled[i]+prob_o_rescaled[i-1]
+                    draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
+                    o = np.amin(np.where(draw_o<prob_o_rescaled))
+                    o_tot = np.append(o_tot,o)
+        
+                    # Termination
+                    state_partial = self.stateSpace[x[0],:].reshape(1,len(self.stateSpace[x[0],:]))
+                    state = np.concatenate((state_partial,[[psi]]),1)
+                    prob_b = self.pi_b[o](state).numpy()
+                    prob_b_rescaled = np.divide(prob_b,np.amin(prob_b)+0.01)
+                    for i in range(1,prob_b_rescaled.shape[1]):
+                        prob_b_rescaled[0,i]=prob_b_rescaled[0,i]+prob_b_rescaled[0,i-1]
+                    draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.01)
+                    b = np.amin(np.where(draw_b<prob_b_rescaled)[1])
+                    b_tot = np.append(b_tot,b)
+                    if b == 1:
+                        b_bool = True
+                    else:
+                        b_bool = False
+        
+                    o_prob_tilde = np.empty((1,self.option_space))
+                    if b_bool == True:
+                        o_prob_tilde = self.pi_hi(state).numpy()
+                    else:
+                        o_prob_tilde[0,:] = self.zeta/self.option_space*np.ones((1,self.option_space))
+                        o_prob_tilde[0,o] = 1 - self.zeta + self.zeta/self.option_space
+            
+                    prob_o = o_prob_tilde
+                    prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.01)
+                    for i in range(1,prob_o_rescaled.shape[1]):
+                        prob_o_rescaled[0,i]=prob_o_rescaled[0,i]+prob_o_rescaled[0,i-1]
+                    draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
+                    o = np.amin(np.where(draw_o<prob_o_rescaled)[1])
+                    o_tot = np.append(o_tot,o)
+        
+                    for k in range(0,max_epoch_per_traj):
+                        state_partial = self.stateSpace[x[k],:].reshape(1,len(self.stateSpace[x[k],:]))
+                        state = np.concatenate((state_partial,[[psi]]),1)
+                        # draw action
+                        prob_u = self.pi_lo[o](state).numpy()
+                        prob_u_rescaled = np.divide(prob_u,np.amin(prob_u)+0.01)
+                        for i in range(1,prob_u_rescaled.shape[1]):
+                            prob_u_rescaled[0,i]=prob_u_rescaled[0,i]+prob_u_rescaled[0,i-1]
+                        draw_u=np.divide(np.random.rand(),np.amin(prob_u)+0.01)
+                        u = np.amin(np.where(draw_u<prob_u_rescaled)[1])
+            
+                        # given action, draw next state
+                        x_k_possible=np.where(self.P[x[k],:,int(u)]!=0)
+                        prob = self.P[x[k],x_k_possible[0][:],int(u)]
+                        prob_rescaled = np.divide(prob,np.amin(prob))
+            
+                        for i in range(1,prob_rescaled.shape[0]):
+                            prob_rescaled[i]=prob_rescaled[i]+prob_rescaled[i-1]
+                        draw=np.divide(np.random.rand(),np.amin(prob))
+                        index_x_plus1=np.amin(np.where(draw<prob_rescaled))
+                        x = np.append(x, x_k_possible[0][index_x_plus1])
+                        u_tot = np.append(u_tot,u)
+            
+                        if (x[k] == self.R1_STATE_INDEX and (psi == 0 or psi==2)) or (x[k] == self.R2_STATE_INDEX and (psi == 1 or psi==2)):
+                            r = r + 1 
+            
+                        # Randomly update the reward
+                        psi = TwoRewards.Expert.Simulation_NN.UpdateReward(self, psi, x[k])
+                        psi_tot = np.append(psi_tot, psi)
+            
+                        # Select Termination
+                        # Termination
+                        state_plus1_partial = self.stateSpace[x[k+1],:].reshape(1,len(self.stateSpace[x[k+1],:]))
+                        state_plus1 = np.concatenate((state_plus1_partial,[[psi]]),1)
+                        prob_b = self.pi_b[o](state_plus1).numpy()
+                        prob_b_rescaled = np.divide(prob_b,np.amin(prob_b)+0.01)
+                        for i in range(1,prob_b_rescaled.shape[1]):
+                            prob_b_rescaled[0,i]=prob_b_rescaled[0,i]+prob_b_rescaled[0,i-1]
+                        draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.01)
+                        b = np.amin(np.where(draw_b<prob_b_rescaled)[1])
+                        b_tot = np.append(b_tot,b)
+                        if b == 1:
+                            b_bool = True
+                        else:
+                            b_bool = False
+        
+                        o_prob_tilde = np.empty((1,self.option_space))
+                        if b_bool == True:
+                            o_prob_tilde = self.pi_hi(state_plus1).numpy()
+                        else:
+                            o_prob_tilde[0,:] = self.zeta/self.option_space*np.ones((1,self.option_space))
+                            o_prob_tilde[0,o] = 1 - self.zeta + self.zeta/self.option_space
+            
+                        prob_o = o_prob_tilde
+                        prob_o_rescaled = np.divide(prob_o, np.amin(prob_o)+0.01)
+                        for i in range(1,prob_o_rescaled.shape[1]):
+                            prob_o_rescaled[0,i]=prob_o_rescaled[0,i]+prob_o_rescaled[0,i-1]
+                        draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
+                        o = np.amin(np.where(draw_o<prob_o_rescaled)[1])
+                        o_tot = np.append(o_tot,o)
+            
+        
+                    traj[t] = x
+                    control[t]=u_tot
+                    Option[t]=o_tot
+                    Termination[t]=b_tot
+                    psi_evolution[t] = psi_tot                
+                    reward = np.append(reward,r)
+
+                return traj, control, Option, Termination, psi_evolution, reward
+            
+            def HILVideoSimulation(self,u,states,o,psi,name_video):
+                
+                mapsize = self.Environment.map.shape
+                #count trees
+                ntrees=0;
+                trees = np.empty((0,2),int)
+                shooters = np.empty((0,2),int)
+                nshooters=0
+                for i in range(0,mapsize[0]):
+                    for j in range(0,mapsize[1]):
+                        if self.Environment.map[i,j]==self.Environment.TREE:
+                            trees = np.append(trees, [[j, i]], 0)
+                            ntrees += 1
+                        if self.Environment.map[i,j]==self.Environment.SHOOTER:
+                            shooters = np.append(shooters, [[j, i]], 0)
+                            nshooters+=1
+
+                #R1
+                R1Index=self.R1_STATE_INDEX
+                i_R1 = self.Environment.stateSpace[R1Index,0]
+                j_R1 = self.Environment.stateSpace[R1Index,1]
+                R1 = np.array([j_R1, i_R1])
+                #base
+                BaseIndex=self.Environment.BaseStateIndex()
+                i_base = self.Environment.stateSpace[BaseIndex,0]
+                j_base = self.Environment.stateSpace[BaseIndex,1]
+                base = np.array([j_base, i_base])
+                #R2
+                R2Index = self.R2_STATE_INDEX
+                i_R2 = self.Environment.stateSpace[R2Index,0]
+                j_R2 = self.Environment.stateSpace[R2Index,1]
+                R2 = np.array([j_R2, i_R2])
+
+                # Plot
+                fig = plt.figure()
+                plt.plot([0, mapsize[1], mapsize[1], 0, 0],[0, 0, mapsize[0], mapsize[0], 0],'k-')
+                plt.plot([base[0], base[0], base[0]+1, base[0]+1, base[0]],
+                         [base[1], base[1]+1, base[1]+1, base[1], base[1]],'k-')
+                plt.plot([R1[0], R1[0], R1[0]+1, R1[0]+1, R1[0]],
+                         [R1[1], R1[1]+1, R1[1]+1, R1[1], R1[1]],'k-')
+                plt.plot([R2[0], R2[0], R2[0]+1, R2[0]+1, R2[0]],
+                         [R2[1], R2[1]+1, R2[1]+1, R2[1], R2[1]],'k-')
+
+                for i in range(0,nshooters):
+                    plt.plot([shooters[i,0], shooters[i,0], shooters[i,0]+1, shooters[i,0]+1, shooters[i,0]],
+                             [shooters[i,1], shooters[i,1]+1, shooters[i,1]+1, shooters[i,1], shooters[i,1]],'k-')
+
+                for i in range(0,ntrees):
+                    plt.plot([trees[i,0], trees[i,0], trees[i,0]+1, trees[i,0]+1, trees[i,0]],
+                             [trees[i,1], trees[i,1]+1, trees[i,1]+1, trees[i,1], trees[i,1]],'k-')
+
+                plt.fill([base[0], base[0], base[0]+1, base[0]+1, base[0]],
+                         [base[1], base[1]+1, base[1]+1, base[1], base[1]],'r')
+                plt.fill([R1[0], R1[0], R1[0]+1, R1[0]+1, R1[0]],
+                         [R1[1], R1[1]+1, R1[1]+1, R1[1], R1[1]],'y')
+                plt.fill([R2[0], R2[0], R2[0]+1, R2[0]+1, R2[0]],
+                         [R2[1], R2[1]+1, R2[1]+1, R2[1], R2[1]],'y')
+
+                for i in range(0,nshooters):
+                    plt.fill([shooters[i,0], shooters[i,0], shooters[i,0]+1, shooters[i,0]+1, shooters[i,0]],
+                             [shooters[i,1], shooters[i,1]+1, shooters[i,1]+1, shooters[i,1], shooters[i,1]],'c')
+
+                for i in range(0,ntrees):
+                    plt.fill([trees[i,0], trees[i,0], trees[i,0]+1, trees[i,0]+1, trees[i,0]],
+                             [trees[i,1], trees[i,1]+1, trees[i,1]+1, trees[i,1], trees[i,1]],'g')
+
+                plt.text(base[0]+0.5, base[1]+0.5, 'B')
+                plt.text(R1[0]+0.5, R1[1]+0.5, 'R1')
+                plt.text(R2[0]+0.5, R2[1]+0.5, 'R2')
+                for i in range(0,nshooters):
+                    plt.text(shooters[i,0]+0.5, shooters[i,1]+0.5, 'S')
+
+                ims = []
+                for s in range(0,len(u)):
+                    if psi[s]==0:
+                        im2, = plt.fill([R1[0], R1[0], R1[0]+1, R1[0]+1, R1[0]],
+                                        [R1[1], R1[1]+1, R1[1]+1, R1[1], R1[1]],'m')
+                        im3, = plt.fill([R2[0], R2[0], R2[0]+1, R2[0]+1, R2[0]],
+                                        [R2[1], R2[1]+1, R2[1]+1, R2[1], R2[1]],'y')
+                    if psi[s]==1:
+                        im2, = plt.fill([R1[0], R1[0], R1[0]+1, R1[0]+1, R1[0]],
+                                        [R1[1], R1[1]+1, R1[1]+1, R1[1], R1[1]],'y')
+                        im3, = plt.fill([R2[0], R2[0], R2[0]+1, R2[0]+1, R2[0]],
+                                        [R2[1], R2[1]+1, R2[1]+1, R2[1], R2[1]],'m')
+                    if psi[s]==2:
+                        im2, = plt.fill([R1[0], R1[0], R1[0]+1, R1[0]+1, R1[0]],
+                                        [R1[1], R1[1]+1, R1[1]+1, R1[1], R1[1]],'m')
+                        im3, = plt.fill([R2[0], R2[0], R2[0]+1, R2[0]+1, R2[0]],
+                                        [R2[1], R2[1]+1, R2[1]+1, R2[1], R2[1]],'m')
+                    if psi[s]==3:
+                        im2, = plt.fill([R1[0], R1[0], R1[0]+1, R1[0]+1, R1[0]],
+                                        [R1[1], R1[1]+1, R1[1]+1, R1[1], R1[1]],'y')
+                        im3, = plt.fill([R2[0], R2[0], R2[0]+1, R2[0]+1, R2[0]],
+                                        [R2[1], R2[1]+1, R2[1]+1, R2[1], R2[1]],'y')
+                    if u[s] == self.Environment.NORTH:
+                        txt = u'\u2191'
+                    elif u[s] == self.Environment.SOUTH:
+                        txt = u'\u2193'
+                    elif u[s] == self.Environment.EAST:
+                        txt = u'\u2192'
+                    elif u[s] == self.Environment.WEST:
+                        txt = u'\u2190'
+                    elif u[s] == self.Environment.HOVER:
+                        txt = u'\u2715'
+                    if o[s]==0:
+                        c = 'c'
+                    elif o[s]==1:
+                        c = 'lime'
+                    elif o[s]==2:
+                        c = 'y'         
+                    im1 = plt.text(self.Environment.stateSpace[states[s],1]+0.3, self.Environment.stateSpace[states[s],0]+0.1, txt, fontsize=20, backgroundcolor=c)
+                    ims.append([im1,im2,im3])
+        
+                ani = animation.ArtistAnimation(fig, ims, interval=1200, blit=True,
+                                                repeat_delay=2000)
+                ani.save(name_video)
                 
 
     class PI_LO:
+# =============================================================================
+#         low level policy class for tabular parameterization
+# =============================================================================
         def __init__(self, pi_lo):
             self.pi_lo = pi_lo
             self.expert = TwoRewards.Expert()
@@ -1387,6 +1682,9 @@ class TwoRewards:
             return prob_distribution
             
     class PI_B:
+# =============================================================================
+#         termination policy class for tabular parameterization
+# =============================================================================
         def __init__(self, pi_b):
             self.pi_b = pi_b
             self.expert = TwoRewards.Expert()
@@ -1399,6 +1697,9 @@ class TwoRewards:
             return prob_distribution
             
     class PI_HI:
+# =============================================================================
+#         high level policy class for tabular parameterization
+# =============================================================================
         def __init__(self, pi_hi):
             self.pi_hi = pi_hi
             self.expert = TwoRewards.Expert()
