@@ -40,7 +40,7 @@ class NN_PI_LO:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(30, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=0, maxval=1, seed=None),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=None),
                                    bias_initializer=keras.initializers.Zeros()),
                 keras.layers.Dense(self.action_space),
                 keras.layers.Softmax()
@@ -52,7 +52,12 @@ class NN_PI_LO:
                                   show_shapes=True, 
                                   show_layer_names=True,
                                   expand_nested=True)
+    def save(model, name):
+        model.save(name)
         
+    def load(name):
+        NN_model = keras.models.load_model(name)
+        return NN_model           
             
 class NN_PI_B:
 # =============================================================================
@@ -65,7 +70,7 @@ class NN_PI_B:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(30, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=0, maxval=1, seed=None),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=None),
                                    bias_initializer=keras.initializers.Zeros()),
                 keras.layers.Dense(self.termination_space),
                 keras.layers.Softmax()
@@ -77,6 +82,12 @@ class NN_PI_B:
                                   show_shapes=True, 
                                   show_layer_names=True,
                                   expand_nested=True)
+    def save(model, name):
+        model.save(name)
+        
+    def load(name):
+        NN_model = keras.models.load_model(name)
+        return NN_model   
             
 class NN_PI_HI:
 # =============================================================================
@@ -89,7 +100,7 @@ class NN_PI_HI:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(100, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.05, maxval=0.05, seed=None),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=None),
                                    bias_initializer=keras.initializers.Zeros()),
                 keras.layers.Dense(self.option_space),
                 keras.layers.Softmax()
@@ -101,7 +112,13 @@ class NN_PI_HI:
                                   show_shapes=True, 
                                   show_layer_names=True,
                                   expand_nested=True)                
-
+    def save(model, name):
+        model.save(name)
+        
+    def load(name):
+        NN_model = keras.models.load_model(name)
+        return NN_model   
+    
 class OnlineHIL:
     def __init__(self, TrainingSet, Labels, option_space, M_step_epoch, optimizer):
         self.TrainingSet = TrainingSet
@@ -192,6 +209,7 @@ class OnlineHIL:
         loss_pi_hi = 0
         loss_pi_b = 0
         loss_pi_lo = 0
+        
         for at in range(self.action_space):
             for st in range(StateSpace_size):
                 for ot_past in range(self.option_space):
@@ -200,14 +218,7 @@ class OnlineHIL:
                             for oT in range(self.option_space):
                                 state_input = stateSpace[st,:].reshape(1,self.size_input)
                                 loss_pi_hi = loss_pi_hi - phi_h[ot_past,1,ot,at,st,bT,oT]*kb.log(NN_options(state_input,training=True)[0][ot])
-        
-        for at in range(self.action_space):
-            for st in range(StateSpace_size):
-                for ot_past in range(self.option_space):
-                    for bt in range(self.termination_space):
-                        for ot in range(self.option_space):
-                            for bT in range(self.termination_space):
-                                for oT in range(self.option_space):
+                                for bt in range(self.termination_space):
                                     state_input = stateSpace[st,:].reshape(1,self.size_input)
                                     loss_pi_lo = loss_pi_lo - phi_h[ot_past,bt,ot,at,st,bT,oT]*kb.log(NN_actions[ot](state_input,training=True)[0][at])
                                     loss_pi_b = loss_pi_b - phi_h[ot_past,bt,ot,at,st,bT,oT]*kb.log(NN_termination[ot_past](state_input,training=True)[0][bt])
@@ -221,8 +232,13 @@ class OnlineHIL:
 # =============================================================================
         weights = []
         loss = 0
+        T = len(self.TrainingSet)
+        if t+1 == T:
+            M_step_epochs = 100
+        else:
+            M_step_epochs = self.epochs
                 
-        for epoch in range(self.epochs):
+        for epoch in range(M_step_epochs):
             print('\nStart m-step for sample ', t,' iteration ', epoch+1)
         
             with tf.GradientTape() as tape:
