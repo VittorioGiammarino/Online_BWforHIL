@@ -9,6 +9,13 @@ import World
 import numpy as np
 import OnlineBW_HIL
 import BatchBW_HIL 
+import matplotlib.pyplot as plt
+
+with open('Models/likelihood_batch.npy', 'rb') as f:
+    likelihood_batch = np.load(f, allow_pickle=True)
+
+with open('Models/likelihood_online.npy', 'rb') as f:
+    likelihood_online = np.load(f, allow_pickle=True)
 
 with open('Models/Saved_Model_Expert/pi_hi.npy', 'rb') as f:
     pi_hi_expert = np.load(f)
@@ -33,11 +40,13 @@ pi_b_online = []
 for i in range(option_space):
     pi_lo_online.append(OnlineBW_HIL.NN_PI_LO.load('Models/Saved_Model_Online/pi_lo_NN_{}'.format(i)))
     pi_b_online.append(OnlineBW_HIL.NN_PI_B.load('Models/Saved_Model_Online/pi_b_NN_{}'.format(i)))
+        
+
 
 # %% Expert
 expert = World.TwoRewards.Expert()
 ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
-max_epoch = 100 #max iterations in the simulation per trajectory
+max_epoch = 200 #max iterations in the simulation per trajectory
 nTraj = 100 #number of trajectories generated
 [trajExpert, controlExpert, OptionsExpert, 
  TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
@@ -70,6 +79,28 @@ AverageRewardExpert = np.sum(rewardExpert)/nTraj
 AverageRewardBatch = np.sum(rewardBatch)/nTraj
 AverageRewardOnline = np.sum(rewardOnline)/nTraj
 
+# %% Plot Likelihood 
 
+
+x_likelihood_batch = np.linspace(1, len(likelihood_batch), len(likelihood_batch)) 
+x_likelihood_online = np.linspace(1,len(likelihood_online),len(likelihood_online))
+
+fig, ax1 = plt.subplots()
+
+color = 'tab:red'
+ax1.set_xlabel('Batch iterations' , color=color)
+ax1.set_ylabel('likelihood')
+ax1.plot(x_likelihood_batch, likelihood_batch, '-d', color=color)
+ax1.tick_params(axis='x', labelcolor=color)
+
+ax2 = ax1.twiny()  # instantiate a second axes that shares the same x-axis
+
+color = 'tab:blue'
+ax2.set_xlabel('Online iterations' , color=color)  # we already handled the x-label with ax1
+ax2.plot(x_likelihood_online, likelihood_online, color=color)
+ax2.tick_params(axis='x', labelcolor=color)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Figures/likelihood.eps', format='eps')
+plt.show()
 
    

@@ -16,8 +16,8 @@ import time
 expert = World.TwoRewards.Expert()
 pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
 ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
-max_epoch = 200 #max iterations in the simulation per trajectory
-nTraj = 10 #number of trajectories generated
+max_epoch = 100 #max iterations in the simulation per trajectory
+nTraj = 30 #number of trajectories generated
 [trajExpert, controlExpert, OptionsExpert, 
  TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
 
@@ -25,13 +25,13 @@ nTraj = 10 #number of trajectories generated
 ss = expert.Environment.stateSpace
 Labels, TrainingSet = BatchBW_HIL.ProcessData(trajExpert, controlExpert, psiExpert, ss)
 option_space = 2
-M_step_epoch = 200
-size_batch = 35
-optimizer = keras.optimizers.Adamax(learning_rate=1e-4)
+M_step_epoch = 50
+size_batch = 32
+optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
 Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
-N=15 #number of iterations for the BW algorithm
+N=14 #number of iterations for the BW algorithm
 start_batch_time = time.time()
-pi_hi_batch, pi_lo_batch, pi_b_batch = Agent_BatchHIL.Baum_Welch(N)
+pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N)
 end_batch_time = time.time()
 Batch_time = end_batch_time-start_batch_time
 #evaluation
@@ -48,9 +48,9 @@ BatchSim.HILVideoSimulation(controlBatch[best][:], trajBatch[best][:],
 M_step_epoch = 1
 optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
 Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
-T_min = 1000
+T_min = 2400
 start_online_time = time.time()
-pi_hi_online, pi_lo_online, pi_b_online = Agent_OnlineHIL.Online_Baum_Welch(T_min)
+pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min)
 end_online_time = time.time()
 Online_time = end_online_time-start_online_time
 #evaluation
@@ -63,6 +63,41 @@ best = np.argmax(rewardOnline)
 OnlineSim.HILVideoSimulation(controlOnline[best][:], trajOnline[best][:], 
                             OptionsOnline[best][:], psiOnline[best][:],"Videos/VideosOnlineAgent/sim_OnlineBW.mp4")
 
+# %% Likelihood comparison Expert
+
+pi_lo_output_batch = []
+for i in range(option_space):
+    pi_lo_output_batch.append(pi_lo_batch[i](TrainingSet))
+
+T = pi_lo_output_batch[0].shape[0]
+action_space = pi_lo_output_batch[0].shape[1]
+anomaly = []
+
+for t in range(T):
+    state = TrainingSet[t,:].reshape(1,len(TrainingSet[t,:]))
+    state_ID = expert.FindStateIndex(state)
+    action = Labels[t]    
+    partial = 0
+    mu_temp = np.zeros((option_space))
+    for o_past in range(option_space):
+        for b in range(2):
+            for o in range(option_space):
+                if b == 0 and o == o_past:
+                    pi_hi = 1
+                elif b == 1:
+                    pi_hi = pi_hi_expert[state_ID,o]
+                else:
+                    pi_hi = 0
+                partial = partial + pi_lo_expert[state_ID, int(action), o]*pi_hi*pi_b_expert[state_ID,b,o_past]*pi_hi_expert[state_ID,o_past]
+                    
+    if partial == 0:
+        anomaly.append(t)            
+    if t == 0:
+        likelihood_expert = partial
+    else:
+        likelihood_expert = (likelihood_expert + partial)
+
+likelihood_expert = likelihood_expert/T
 
 
 # %% Save Model
@@ -86,3 +121,9 @@ OnlineBW_HIL.NN_PI_HI.save(pi_hi_online, 'Models/Saved_Model_Online/pi_hi_NN')
 for i in range(option_space):
     OnlineBW_HIL.NN_PI_LO.save(pi_lo_online[i], 'Models/Saved_Model_Online/pi_lo_NN_{}'.format(i))
     OnlineBW_HIL.NN_PI_B.save(pi_b_online[i], 'Models/Saved_Model_Online/pi_b_NN_{}'.format(i))
+    
+with open('Models/likelihood_batch.npy', 'wb') as f:
+    np.save(f, likelihood_batch)
+
+with open('Models/likelihood_online.npy', 'wb') as f:
+    np.save(f, likelihood_online)

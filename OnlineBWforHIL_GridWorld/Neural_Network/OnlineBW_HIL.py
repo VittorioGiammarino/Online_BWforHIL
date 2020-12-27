@@ -142,6 +142,9 @@ class OnlineHIL:
         self.NN_termination = NN_termination
         self.epochs = M_step_epoch
         self.optimizer = optimizer
+        self.Lambda_Lb = 1
+        self.Lambda_Lv = 0.1
+        self.Lambda_DKL = 0.01        
         
     def FindStateIndex(self, value):
         stateSpace = np.unique(self.TrainingSet, axis=0)
@@ -199,7 +202,34 @@ class OnlineHIL:
             
         return TrainingSetID
     
-    def Loss(self, phi_h, NN_termination, NN_options, NN_actions):
+    def Regularizer_Lb(self, NN_options):
+        tau = 1/self.option_space
+        stateSpace = np.unique(self.TrainingSet, axis=0)
+        pi_hi = NN_options(stateSpace,training=True)
+        Lb = kb.sum(kb.sqrt(kb.square(kb.sum(pi_hi,0)/pi_hi.shape[0] - tau)))
+        return Lb
+    
+    def Regularizer_Lv(self, NN_options):
+        stateSpace = np.unique(self.TrainingSet, axis=0)
+        pi_hi = NN_options(stateSpace,training=True)        
+        Lv = kb.sum(kb.sum(pi_hi-kb.sum(pi_hi,0)/pi_hi.shape[0],0)/pi_hi.shape[0])
+        return Lv
+    
+    def Regularizer_KL_divergence(self, t, NN_actions):
+        DKL = 0
+        epsilon = 0.000001
+        State = self.TrainingSet[t,:].reshape(1,self.size_input)
+        Action = self.Labels[t]                       
+        for i in range(self.option_space):
+            for j in range(self.option_space):
+                if i!=j:
+                    pi_lo_o_i = NN_actions[i](State,training=True)[0,int(Action)]
+                    pi_lo_o_j = NN_actions[j](State,training=True)[0,int(Action)]
+                    DKL = DKL + pi_lo_o_i*kb.log(pi_lo_o_i/(pi_lo_o_j+epsilon))
+                    
+        return DKL    
+    
+    def Loss(self, phi, NN_termination, NN_options, NN_actions, t):
 # =============================================================================
 #         compute Loss function to minimize
 # =============================================================================
@@ -214,19 +244,23 @@ class OnlineHIL:
             for st in range(StateSpace_size):
                 for ot_past in range(self.option_space):
                     for ot in range(self.option_space):
-                        for bT in range(self.termination_space):
-                            for oT in range(self.option_space):
-                                state_input = stateSpace[st,:].reshape(1,self.size_input)
-                                loss_pi_hi = loss_pi_hi - phi_h[ot_past,1,ot,at,st,bT,oT]*kb.log(NN_options(state_input,training=True)[0][ot])
-                                for bt in range(self.termination_space):
-                                    state_input = stateSpace[st,:].reshape(1,self.size_input)
-                                    loss_pi_lo = loss_pi_lo - phi_h[ot_past,bt,ot,at,st,bT,oT]*kb.log(NN_actions[ot](state_input,training=True)[0][at])
-                                    loss_pi_b = loss_pi_b - phi_h[ot_past,bt,ot,at,st,bT,oT]*kb.log(NN_termination[ot_past](state_input,training=True)[0][bt])
+                        state_input = stateSpace[st,:].reshape(1,self.size_input)
+                        loss_pi_hi = loss_pi_hi - phi[ot_past,1,ot,st,at]*kb.log(NN_options(state_input,training=True)[0][ot])
+                        for bt in range(self.termination_space):
+                            state_input = stateSpace[st,:].reshape(1,self.size_input)
+                            loss_pi_lo = loss_pi_lo - phi[ot_past,bt,ot,st,at]*kb.log(NN_actions[ot](state_input,training=True)[0][at])
+                            loss_pi_b = loss_pi_b - phi[ot_past,bt,ot,st,at]*kb.log(NN_termination[ot_past](state_input,training=True)[0][bt])
                                     
         loss = loss_pi_hi + loss_pi_lo + loss_pi_b
+        
+        Lb = OnlineHIL.Regularizer_Lb(self, NN_options)
+        Lv = OnlineHIL.Regularizer_Lv(self, NN_options)
+        DKL = OnlineHIL.Regularizer_KL_divergence(self, t, NN_actions)
+        loss = loss + self.Lambda_Lb*Lb - self.Lambda_Lv*Lv - self.Lambda_DKL*DKL        
+        
         return loss
 
-    def OptimizeLoss(self, phi_h, t):
+    def OptimizeLoss(self, phi, t):
 # =============================================================================
 #         minimize Loss all toghether
 # =============================================================================
@@ -247,7 +281,7 @@ class OnlineHIL:
                     weights.append(self.NN_actions[i].trainable_weights)
                 weights.append(self.NN_options.trainable_weights)
                 tape.watch(weights)
-                loss = OnlineHIL.Loss(self, phi_h, self.NN_termination, self.NN_options, self.NN_actions)
+                loss = OnlineHIL.Loss(self, phi, self.NN_termination, self.NN_options, self.NN_actions, t)
             
             grads = tape.gradient(loss,weights)
             j=0
@@ -259,82 +293,76 @@ class OnlineHIL:
             print('options loss:', float(loss))
         
         return loss        
+    
+    def likelihood_approximation(self):
+        T = self.TrainingSet.shape[0]
+        for t in range(T):
+            state = self.TrainingSet[t,:].reshape(1,len(self.TrainingSet[t,:]))
+            action = self.Labels[t]    
+            partial = 0
+            for o_past in range(self.option_space):
+                for b in range(self.termination_space):
+                    for o in range(self.option_space):
+                        partial = partial + OnlineHIL.Pi_hi(o_past, self.NN_options, state)*OnlineHIL.Pi_combined(o, o_past, action, b, self.NN_options, self.NN_actions[o], 
+                                                                                                                self.NN_termination[o_past], state, self.zeta, self.option_space)
+            if t == 0:
+                likelihood = partial
+            else:
+                likelihood = likelihood+partial
+
+        likelihood = (likelihood/T).numpy()
         
-    def Online_Baum_Welch(self, T_min):
+        return likelihood    
+        
+    def Online_Baum_Welch_together(self, T_min):
+        likelihood = np.empty((0))
         TrainingSetID = OnlineHIL.TrainingSetID(self)
         stateSpace = np.unique(self.TrainingSet, axis=0)
         StateSpace_size = len(stateSpace)
         
         
-        zi = np.ones((self.option_space, self.termination_space, self.option_space, self.action_space, StateSpace_size, 1))
-        phi_h = np.ones((self.option_space, self.termination_space, self.option_space, self.action_space, 
-                         StateSpace_size, self.termination_space, self.option_space,1))
-        norm = np.zeros((len(self.mu), self.action_space, StateSpace_size))
+        zi = np.zeros((self.option_space, self.termination_space, self.option_space, 1))
+        phi_h = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size,
+                         self.action_space, self.termination_space, self.option_space,1))
         P_option_given_obs = np.zeros((self.option_space, 1))
-
-        State = TrainingSetID[0,0]
-        Action = self.Labels[0]
-        
-        for a1 in range(self.action_space):
-            for s1 in range(StateSpace_size):
-                for o0 in range(self.option_space):
-                    for b1 in range(self.termination_space):
-                        for o1 in range(self.option_space):
-                            state = stateSpace[s1,:].reshape(1,self.size_input)
-                            action = a1
-                            zi[o0,b1,o1,a1,s1,0] = OnlineHIL.Pi_combined(o1, o0, action, b1, self.NN_options, self.NN_actions[o1], self.NN_termination[o0], 
-                                                                         state, self.zeta, self.option_space)
-                                                       
-                    norm[o0,a1,s1]=self.mu[o0]*np.sum(zi[:,:,:,a1,s1,0],(1,2))[o0]
-            
-                zi[:,:,:,a1,s1,0] = np.divide(zi[:,:,:,a1,s1,0],np.sum(norm[:,a1,s1]))
-                if a1 == int(Action) and s1 == int(State):
-                    P_option_given_obs[:,0] = np.sum(np.transpose(np.transpose(np.sum(zi[:,:,:,a1,s1,0],1))*self.mu),0) 
-
-        for a1 in range(self.action_space):
-            for s1 in range(StateSpace_size):
-                for o0 in range(self.option_space):
-                    for b1 in range(self.termination_space):
-                        for o1 in range(self.option_space):
-                            for bT in range(self.termination_space):
-                                for oT in range(self.option_space):
-                                    if a1 == int(Action) and s1 == int(State):
-                                        phi_h[o0,b1,o1,a1,s1,bT,oT,0] = zi[o0,b1,o1,a1,s1,0]*self.mu[o0]
-                                    else:
-                                        phi_h[o0,b1,o1,a1,s1,bT,oT,0] = 0
+        P_option_given_obs = self.mu.reshape((self.option_space, 1)) 
+        phi = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, 
+                        self.action_space, 1))
                                         
-        for t in range(1,len(self.TrainingSet)):
-        
+        for t in range(0,len(self.TrainingSet)):
+            if t==0:
+                eta=1
+            else:
+                eta=1/(t+1) 
+                
             if np.mod(t,100)==0:
                 print('iter', t, '/', len(self.TrainingSet))
     
             #E-step
-            zi_temp1 = np.ones((self.option_space, self.termination_space, self.option_space, self.action_space, StateSpace_size, 1))
-            phi_h_temp = np.ones((self.option_space, self.termination_space, self.option_space, self.action_space, StateSpace_size, 
+            zi_temp1 = np.ones((self.option_space, self.termination_space, self.option_space, 1))
+            phi_h_temp = np.ones((self.option_space, self.termination_space, self.option_space, StateSpace_size,  self.action_space, 
                                   self.termination_space, self.option_space, 1))
-            norm = np.zeros((len(self.mu), self.action_space, StateSpace_size))
+            norm = np.zeros((len(self.mu)))
             P_option_given_obs_temp = np.zeros((self.option_space, 1))
-            prod_term = np.ones((self.option_space, self.termination_space, self.option_space, self.action_space, StateSpace_size, 
+            prod_term = np.ones((self.option_space, self.termination_space, self.option_space, StateSpace_size, self.action_space, 
                                  self.termination_space, self.option_space))
     
             State = TrainingSetID[t,0]
             Action = self.Labels[t]
-            for at in range(self.action_space):
-                for st in range(StateSpace_size):
-                    for ot_past in range(self.option_space):
-                        for bt in range(self.termination_space):
-                            for ot in range(self.option_space):
-                                state = stateSpace[st,:].reshape(1,self.size_input)
-                                action = at
-                                zi_temp1[ot_past,bt,ot,at,st,0] = OnlineHIL.Pi_combined(ot, ot_past, action, bt, self.NN_options, 
-                                                                                        self.NN_actions[ot],  self.NN_termination[ot_past], state, self.zeta, 
-                                                                                        self.option_space)
+            
+            for ot_past in range(self.option_space):
+                for bt in range(self.termination_space):
+                    for ot in range(self.option_space):
+                        state = stateSpace[int(State),:].reshape(1,self.size_input)
+                        action = int(Action)
+                        zi_temp1[ot_past,bt,ot,0] = OnlineHIL.Pi_combined(ot, ot_past, action, bt, self.NN_options, 
+                                                                          self.NN_actions[ot],  self.NN_termination[ot_past], state, self.zeta, 
+                                                                          self.option_space)
                 
-                        norm[ot_past,at,st] = P_option_given_obs[ot_past,0]*np.sum(zi_temp1[:,:,:,at,st,0],(1,2))[ot_past]
+                norm[ot_past] = P_option_given_obs[ot_past,0]*np.sum(zi_temp1[:,:,:,0],(1,2))[ot_past]
     
-                    zi_temp1[:,:,:,at,st,0] = np.divide(zi_temp1[:,:,:,at,st,0],np.sum(norm[:,at,st]))
-                    if at == int(Action) and st == int(State):
-                        P_option_given_obs_temp[:,0] = np.sum(np.transpose(np.transpose(np.sum(zi_temp1[:,:,:,at,st,0],1))*P_option_given_obs[:,0]),0) 
+            zi_temp1[:,:,:,0] = np.divide(zi_temp1[:,:,:,0],np.sum(norm[:]))
+            P_option_given_obs_temp[:,0] = np.sum(np.transpose(np.transpose(np.sum(zi_temp1[:,:,:,0],1))*P_option_given_obs[:,0]),0) 
             
             zi = zi_temp1
     
@@ -345,25 +373,113 @@ class OnlineHIL:
                             for ot in range(self.option_space):
                                 for bT in range(self.termination_space):
                                     for oT in range(self.option_space):
-                                        prod_term[ot_past, bt, ot, at, st, bT, oT] = np.sum(zi[:,bT,oT,int(Action),int(State),0]*np.sum(phi_h[ot_past,bt,ot,at,st,:,:,0],0))
+                                        prod_term[ot_past, bt, ot, st, at, bT, oT] = np.sum(zi[:,bT,oT,0]*np.sum(phi_h[ot_past,bt,ot,st,at,:,:,0],0))
                                         if at == int(Action) and st == int(State):
-                                            phi_h_temp[ot_past,bt,ot,at,st,bT,oT,0] = (1/t)*zi[ot_past,bt,ot,at,st,0]*P_option_given_obs[ot_past,0] 
-                                            + (1-1/t)*prod_term[ot_past,bt,ot,at,st,bT,oT]
+                                            phi_h_temp[ot_past,bt,ot,st,at,bT,oT,0] = (eta)*zi[ot_past,bt,ot,0]*P_option_given_obs[ot_past,0] 
+                                            + (1-eta)*prod_term[ot_past,bt,ot,st,at,bT,oT]
                                         else:
-                                            phi_h_temp[ot_past,bt,ot,at,st,bT,oT,0] = (1-1/t)*prod_term[ot_past,bt,ot,at,st,bT,oT]
+                                            phi_h_temp[ot_past,bt,ot,st,at,bT,oT,0] = (1-eta)*prod_term[ot_past,bt,ot,st,at,bT,oT]
                                     
             phi_h = phi_h_temp
             P_option_given_obs = P_option_given_obs_temp
+            phi = np.sum(phi_h, (5,6))            
             
             #M-step 
             if t > T_min:
-                loss = OnlineHIL.OptimizeLoss(self, phi_h, t)
+                loss = OnlineHIL.OptimizeLoss(self, phi, t)
+                likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
                 
         print('Maximization done, Total Loss:',float(loss))
                 
-        return self.NN_options, self.NN_actions, self.NN_termination
+        return self.NN_options, self.NN_actions, self.NN_termination, likelihood
                 
+    def Online_Baum_Welch(self, T_min):
+        likelihood = np.empty((0))
+        TrainingSetID = OnlineHIL.TrainingSetID(self)
+        stateSpace = np.unique(self.TrainingSet, axis=0)
+        StateSpace_size = len(stateSpace)
+        
+        rho = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, 
+                        self.action_space, self.option_space, 1)) #rho filter initialiazation
+        chi = np.zeros((self.option_space, 1)) #chi filter
+        chi = self.mu.reshape((self.option_space, 1)) #chi filter initialization
+        phi = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, 
+                        self.action_space, 1))
+        
+
+        for t in range(0,len(self.TrainingSet)):
+            
+            if t==0:
+                eta=0.5
+            else:
+                eta=0.5 
+        
+            if np.mod(t,100)==0:
+                print('iter', t, '/', len(self.TrainingSet))
+    
+            #E-step
+            chi_temp_partial = np.zeros((self.option_space, self.termination_space, self.option_space, 1)) #store partial value of chi
+            norm_chi = np.zeros((len(self.mu))) #store normalizing factor for chi
+            chi_temp = np.zeros((self.option_space, 1)) #store final chi value temporary
+            r_temp_partial = np.zeros((self.option_space, self.termination_space, self.option_space, 1)) #r numerator
+            norm_r = np.zeros((len(self.mu),len(self.mu))) #normilizing factor for r
+            rho_temp = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, self.action_space,  
+                                self.option_space, 1))
+            prod_term = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, self.action_space, 
+                                 self.option_space, self.option_space))
+            phi_temp = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, self.action_space,  
+                                self.option_space, 1))
+    
+            State = TrainingSetID[t,0]
+            Action = self.Labels[t]
+            for oT_past in range(self.option_space):
+                for oT in range(self.option_space):
+                    for bT in range(self.termination_space):
+                        state = stateSpace[int(State),:].reshape(1,self.size_input)
+                        action = int(Action)                        
+                        chi_temp_partial[oT_past,bT,oT,0] = OnlineHIL.Pi_combined(oT, oT_past, action, bT, self.NN_options, 
+                                                                                  self.NN_actions[oT],  self.NN_termination[oT_past], state, self.zeta, 
+                                                                                  self.option_space)
+                        Pi_hi_eval = np.clip(OnlineHIL.Pi_hi_bar(bT, oT, oT_past, self.NN_options, state, self.zeta, self.option_space),0.0001,1)
+                        Pi_b_eval = np.clip(OnlineHIL.Pi_b(bT, self.NN_termination[oT_past], state),0.0001,1)
+                        r_temp_partial[oT_past,bT,oT,0] = Pi_hi_eval*Pi_b_eval*chi[oT_past,0]
+                        
+                    norm_r[oT_past,oT] = chi[oT_past,0]*np.sum(r_temp_partial[:,:,:,0],(1))[oT_past,oT]
+                norm_chi[oT_past] = chi[oT_past,0]*np.sum(chi_temp_partial[:,:,:,0],(1,2))[oT_past]
+    
+            chi_temp_partial[:,:,:,0] = np.divide(chi_temp_partial[:,:,:,0],np.sum(norm_chi[:]))
+            chi_temp[:,0] = np.sum(np.transpose(np.transpose(np.sum(chi_temp_partial[:,:,:,0],1))*chi[:,0]),0) #next step chi
+            norm_r = np.sum(norm_r,0)
+    
+            for at in range(self.action_space):
+                for st in range(StateSpace_size):
+                    for ot_past in range(self.option_space):
+                        for bt in range(self.termination_space):
+                            for ot in range(self.option_space):
+                                for oT in range(self.option_space):
+                                    for oT_past in range(self.option_space):
+                                        prod_term[ot_past, bt, ot, st, at, oT, oT_past] = rho[ot_past,bt,ot,st,at,oT_past,0]*np.sum(np.divide(r_temp_partial[oT_past,:,oT],norm_r[oT]))
+                                        
+                                    if at == int(Action) and st == int(State):
+                                        rho_temp[ot_past,bt,ot,st,at,oT,0] = (eta)*np.divide(r_temp_partial[ot_past,bt,ot],norm_r[ot]) 
+                                        + (1-eta)*np.sum(prod_term[ot_past,bt,ot,st,at,oT,:])
+                                        phi_temp[ot_past,bt,ot,st,at,oT,0] = rho_temp[ot_past,bt,ot,st,at,oT,0]*chi_temp[oT,0] 
+                                    else:
+                                        rho_temp[ot_past,bt,ot,st,at,oT,0] = (1-eta)*np.sum(prod_term[ot_past,bt,ot,st,at,oT,:])
+                                        phi_temp[ot_past,bt,ot,st,at,oT,0] = rho_temp[ot_past,bt,ot,st,at,oT,0]*chi_temp[oT,0] 
+                                        
+            chi = chi_temp
+            rho = rho_temp
+            phi = np.sum(phi_temp,5)
+            
+            #M-step 
+            if t > T_min:
+                loss = OnlineHIL.OptimizeLoss(self, phi, t)
+                likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
+                  
+        print('Maximization done, Total Loss:',float(loss))
                 
+        return self.NN_options, self.NN_actions, self.NN_termination, likelihood              
                 
                                         
                                         

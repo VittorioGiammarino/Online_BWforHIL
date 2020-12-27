@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sat Dec 12 13:10:58 2020
+Created on Wed Dec 16 17:36:12 2020
 
 @author: vittorio
 """
@@ -14,12 +14,13 @@ import numpy as np
 import time
 import seaborn as sns
 import matplotlib.pyplot as plt
+from tensorflow import keras
 
 # %%
 
 expert = World.TwoRewards.Expert()
 pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
-ExpertSim = expert.Simulation(pi_hi_expert, pi_lo_expert, pi_b_expert)
+ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
 
 max_epoch = 100 #max iterations in the simulation per trajectory
 nTraj = np.array([5, 10, 20, 40, 50, 100, 200]) #number of trajectories generated
@@ -42,8 +43,11 @@ for i in range(len(nTraj)):
     option_space = 2
     
     #Batch BW for HIL with tabular parameterization: Training
-    Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space)
-    N=10 #number of iterations for the BW algorithm
+    M_step_epoch = 50
+    size_batch = 32
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-3)    
+    Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
+    N=14 #number of iterations for the BW algorithm
     start_batch_time = time.time()
     pi_hi_batch, pi_lo_batch, pi_b_batch = Agent_BatchHIL.Baum_Welch(N)
     end_batch_time = time.time()
@@ -51,10 +55,12 @@ for i in range(len(nTraj)):
     Time_array_batch = np.append(Time_array_batch, Batch_time)
 
     # Online BW for HIL with tabular parameterization: Training
-    Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space)
+    M_step_epoch = 1
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
+    Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
     T_min = nTraj[i]/2
     start_online_time = time.time()
-    pi_hi_online, pi_lo_online, pi_b_online, chi, rho, phi  = Agent_OnlineHIL.Online_Baum_Welch(T_min)
+    pi_hi_online, pi_lo_online, pi_b_online = Agent_OnlineHIL.Online_Baum_Welch(T_min)
     end_online_time = time.time()
     Online_time = end_online_time-start_online_time
     Time_array_online = np.append(Time_array_online, Online_time)
@@ -121,7 +127,7 @@ ax.legend(loc=4, facecolor = '#d8dcd6')
 ax.set_xlabel('Training Samples')
 ax.set_ylabel('Average Reward')
 ax.set_title('Grid World')
-plt.savefig('Figures/Comparison/Reward_GridWorld_tabular.png', format='png')
+plt.savefig('Figures/Comparison/Reward_GridWorld_NN.png', format='png')
 
 
 fig_time, ax_time = plt.subplots()
@@ -133,6 +139,4 @@ ax_time.legend(loc=0, facecolor = '#d8dcd6')
 ax_time.set_xlabel('Training Samples')
 ax_time.set_ylabel('Running Time [h]')
 ax_time.set_title('Grid World')
-plt.savefig('Figures/Comparison/Time_GridWorld_tabular.eps', format='eps')    
-
-
+plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')   
