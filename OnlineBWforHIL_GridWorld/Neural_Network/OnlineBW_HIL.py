@@ -40,7 +40,7 @@ class NN_PI_LO:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(30, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=None),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1),
                                    bias_initializer=keras.initializers.Zeros()),
                 keras.layers.Dense(self.action_space),
                 keras.layers.Softmax()
@@ -70,7 +70,7 @@ class NN_PI_B:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(30, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=None),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1),
                                    bias_initializer=keras.initializers.Zeros()),
                 keras.layers.Dense(self.termination_space),
                 keras.layers.Softmax()
@@ -100,7 +100,7 @@ class NN_PI_HI:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(100, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=None),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1),
                                    bias_initializer=keras.initializers.Zeros()),
                 keras.layers.Dense(self.option_space),
                 keras.layers.Softmax()
@@ -120,7 +120,7 @@ class NN_PI_HI:
         return NN_model   
     
 class OnlineHIL:
-    def __init__(self, TrainingSet, Labels, option_space, M_step_epoch, optimizer):
+    def __init__(self, TrainingSet, Labels, option_space, M_step_epoch, optimizer): 
         self.TrainingSet = TrainingSet
         self.Labels = Labels
         self.option_space = option_space
@@ -130,7 +130,8 @@ class OnlineHIL:
         self.zeta = 0.0001
         self.mu = np.ones(option_space)*np.divide(1,option_space)
         pi_hi = NN_PI_HI(self.option_space, self.size_input)
-        self.NN_options = pi_hi.NN_model()
+        NN_options = pi_hi.NN_model()
+        self.NN_options = NN_options
         NN_low = []
         NN_termination = []
         pi_lo = NN_PI_LO(self.action_space, self.size_input)
@@ -315,7 +316,7 @@ class OnlineHIL:
         return likelihood    
         
     def Online_Baum_Welch_together(self, T_min):
-        likelihood = np.empty((0))
+        likelihood = OnlineHIL.likelihood_approximation(self)
         TrainingSetID = OnlineHIL.TrainingSetID(self)
         stateSpace = np.unique(self.TrainingSet, axis=0)
         StateSpace_size = len(stateSpace)
@@ -394,7 +395,7 @@ class OnlineHIL:
         return self.NN_options, self.NN_actions, self.NN_termination, likelihood
                 
     def Online_Baum_Welch(self, T_min):
-        likelihood = np.empty((0))
+        likelihood = OnlineHIL.likelihood_approximation(self)
         TrainingSetID = OnlineHIL.TrainingSetID(self)
         stateSpace = np.unique(self.TrainingSet, axis=0)
         StateSpace_size = len(stateSpace)

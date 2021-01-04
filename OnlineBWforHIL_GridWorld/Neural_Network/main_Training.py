@@ -17,19 +17,21 @@ expert = World.TwoRewards.Expert()
 pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
 ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = 30 #number of trajectories generated
+nTraj = 5 #number of trajectories generated
 [trajExpert, controlExpert, OptionsExpert, 
  TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
 
-# %% Batch BW for HIL with tabular parameterization: Training
+# %% Hierarchical policy initialization Initialiazation 
 ss = expert.Environment.stateSpace
 Labels, TrainingSet = BatchBW_HIL.ProcessData(trajExpert, controlExpert, psiExpert, ss)
 option_space = 2
+    
+# %% Batch BW for HIL with tabular parameterization: Training
 M_step_epoch = 50
 size_batch = 32
 optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
-Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
-N=14 #number of iterations for the BW algorithm
+Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer) 
+N=10 #number of iterations for the BW algorithm
 start_batch_time = time.time()
 pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N)
 end_batch_time = time.time()
@@ -46,9 +48,9 @@ BatchSim.HILVideoSimulation(controlBatch[best][:], trajBatch[best][:],
 
 # %% Online BW for HIL with tabular parameterization: Training
 M_step_epoch = 1
-optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
-Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
-T_min = 2400
+optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
+Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer) 
+T_min = 400
 start_online_time = time.time()
 pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min)
 end_online_time = time.time()
@@ -64,7 +66,6 @@ OnlineSim.HILVideoSimulation(controlOnline[best][:], trajOnline[best][:],
                             OptionsOnline[best][:], psiOnline[best][:],"Videos/VideosOnlineAgent/sim_OnlineBW.mp4")
 
 # %% Likelihood comparison Expert
-
 pi_lo_output_batch = []
 for i in range(option_space):
     pi_lo_output_batch.append(pi_lo_batch[i](TrainingSet))
