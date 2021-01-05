@@ -153,7 +153,7 @@ class OnlineHIL:
         stateIndex = 0
     
         for k in range(0,K):
-            if stateSpace[k,0]==value[0,0] and stateSpace[k,1]==value[0,1] and stateSpace[k,2]==value[0,2]:
+            if np.sum(stateSpace[k,:]==value[0,:])==self.size_input:
                 stateIndex = k
     
         return stateIndex

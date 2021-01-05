@@ -122,6 +122,8 @@ class NN_PI_HI:
 class OnlineHIL:
     def __init__(self, TrainingSet, Labels, option_space, M_step_epoch, optimizer): 
         self.TrainingSet = TrainingSet
+        self.action_space = len(np.unique(Labels,axis=0))
+        self.action_dictionary = np.unique(Labels, axis = 0)
         
         labels = np.zeros((len(Labels)))
         for i in range(len(Labels)):
@@ -133,7 +135,6 @@ class OnlineHIL:
         
         self.option_space = option_space
         self.size_input = TrainingSet.shape[1]
-        self.action_space = int(np.max(Labels)+1)
         self.termination_space = 2
         self.zeta = 0.0001
         self.mu = np.ones(option_space)*np.divide(1,option_space)
@@ -161,7 +162,7 @@ class OnlineHIL:
         stateIndex = 0
     
         for k in range(0,K):
-            if stateSpace[k,0]==value[0,0] and stateSpace[k,1]==value[0,1] and stateSpace[k,2]==value[0,2]:
+            if np.sum(stateSpace[k,:]==value[0,:])==self.size_input:
                 stateIndex = k
     
         return stateIndex

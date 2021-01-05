@@ -133,13 +133,13 @@ class BatchHIL:
         self.option_space = option_space
         self.size_input = TrainingSet.shape[1]
         self.action_space = len(np.unique(Labels,axis=0))
-        self.action_dictionary = np.unique(Labels)
+        self.action_dictionary = np.unique(Labels, axis = 0)
         self.size_action = Labels.shape[1]
         
-        labels = np.zeros((len(Labels),self.size_action))
+        labels = np.zeros((len(Labels)))
         for i in range(len(Labels)):
             for j in range(self.action_space):
-                if Labels[i] == self.action_dictionary[j]:
+                if np.sum(Labels[i,:] == self.action_dictionary[j,:]) == self.size_action:
                     labels[i] = j
                     
         self.Labels = labels    

@@ -14,16 +14,20 @@ import time
 import matplotlib.pyplot as plt
 
 
-# %%
+# %% Load Data set
 
-World.Walker.Expert.heuristic()  
+with open('ddpg_expert/DataFromExpert/TrainingSet.npy', 'rb') as f:
+    TrainingSet = np.load(f, allow_pickle=True)
+
+with open('ddpg_expert/DataFromExpert/Labels.npy', 'rb') as f:
+    Labels = np.load(f, allow_pickle=True)
+    
+with open('ddpg_expert/DataFromExpert/Reward.npy', 'rb') as f:
+    Reward = np.load(f, allow_pickle=True)
 
 # %% Expert Policy Generation and simulation
-max_epoch = 2000
-nTraj = 5
-TrainingSet, Labels, Reward = World.Walker.Expert.Evaluation(nTraj, max_epoch)
-TrainingSet = np.round(TrainingSet[:,:],3)
-Labels = Labels[:]
+TrainingSet = TrainingSet[0:600,:]
+Labels = Labels[0:600]
 
 # %% Hierarchical policy initialization 
 option_space = 2
@@ -41,11 +45,11 @@ Batch_time = end_batch_time-start_batch_time
 #evaluation
 max_epoch = 20000
 nTraj = 3
-BatchSim = World.LunarLander.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
+BatchSim = World.Walker.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
 [trajBatch, controlBatch, OptionsBatch, 
  TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
 x, u, o, b = BatchSim.HILVideoSimulation('Videos/VideosBatch/Simulation', max_epoch)
-World.LunarLander.Plot(x, u, o, b, 'Figures/FiguresBatch/Batch_simulation.eps')
+
 
 # %% Online BW for HIL with tabular parameterization: Training
 M_step_epoch = 1
@@ -57,11 +61,10 @@ pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Onl
 end_online_time = time.time()
 Online_time = end_online_time-start_online_time
 #evaluation
-OnlineSim = World.LunarLander.Simulation(pi_hi_online, pi_lo_online, pi_b_online, Labels)
+OnlineSim = World.Walker.Simulation(pi_hi_online, pi_lo_online, pi_b_online, Labels)
 [trajOnline, controlOnline, OptionsOnline, 
  TerminationOnline, RewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
 x, u, o, b = OnlineSim.HILVideoSimulation('Videos/VideosOnline/Simulation', max_epoch)
-World.LunarLander.Plot(x, u, o, b, 'Figures/FiguresOnline/Online_simulation.eps')
 
 
 # %% Save Model
