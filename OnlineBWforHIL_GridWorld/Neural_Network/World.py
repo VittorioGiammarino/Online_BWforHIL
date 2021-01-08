@@ -1125,7 +1125,8 @@ class TwoRewards:
         
                 return psi
                 
-            def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories):
+            def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories, Seed):
+                np.random.seed(Seed)
                 traj = [[None]*1 for _ in range(number_of_trajectories)]
                 control = [[None]*1 for _ in range(number_of_trajectories)]
                 Option = [[None]*1 for _ in range(number_of_trajectories)]
@@ -1418,7 +1419,8 @@ class TwoRewards:
         
                 return psi
                 
-            def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories):
+            def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories, Seed):
+                np.random.seed(Seed)
                 traj = [[None]*1 for _ in range(number_of_trajectories)]
                 control = [[None]*1 for _ in range(number_of_trajectories)]
                 Option = [[None]*1 for _ in range(number_of_trajectories)]

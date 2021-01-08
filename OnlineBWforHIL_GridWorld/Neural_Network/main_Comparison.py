@@ -34,36 +34,42 @@ RewardBatch_array = np.empty((0))
 STDBatch_array = np.empty((0))
 RewardOnline_array = np.empty((0))
 STDOnline_array = np.empty((0))
+Likelihood_online_list = []
+Likelihood_batch_list = []
+
+seed = 0
 
 for i in range(len(nTraj)):
     [trajExpert, controlExpert, OptionsExpert, 
-    TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj[i])
+    TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj[i], seed)
     ss = expert.Environment.stateSpace
     Labels, TrainingSet = BatchBW_HIL.ProcessData(trajExpert, controlExpert, psiExpert, ss)
     option_space = 2
     
+    # Online BW for HIL with tabular parameterization: Training
+    M_step_epoch = 5
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
+    Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
+    T_min = len(TrainingSet)-100
+    start_online_time = time.time()
+    pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min)
+    end_online_time = time.time()
+    Online_time = end_online_time-start_online_time
+    Time_array_online = np.append(Time_array_online, Online_time)  
+    Likelihood_online_list.append(likelihood_online)
+    
     #Batch BW for HIL with tabular parameterization: Training
     M_step_epoch = 50
-    size_batch = 32
+    size_batch = 33
     optimizer = keras.optimizers.Adamax(learning_rate=1e-3)    
     Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
-    N=14 #number of iterations for the BW algorithm
+    N=15 #number of iterations for the BW algorithm
     start_batch_time = time.time()
-    pi_hi_batch, pi_lo_batch, pi_b_batch = Agent_BatchHIL.Baum_Welch(N)
+    pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N, likelihood_online[-1])
     end_batch_time = time.time()
     Batch_time = end_batch_time-start_batch_time
     Time_array_batch = np.append(Time_array_batch, Batch_time)
-
-    # Online BW for HIL with tabular parameterization: Training
-    M_step_epoch = 1
-    optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
-    Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
-    T_min = nTraj[i]/2
-    start_online_time = time.time()
-    pi_hi_online, pi_lo_online, pi_b_online = Agent_OnlineHIL.Online_Baum_Welch(T_min)
-    end_online_time = time.time()
-    Online_time = end_online_time-start_online_time
-    Time_array_online = np.append(Time_array_online, Online_time)
+    Likelihood_batch_list.append(likelihood_batch)
     
     # Expert
     AverageRewardExpert = np.sum(rewardExpert)/nTraj[i]
@@ -73,18 +79,18 @@ for i in range(len(nTraj)):
     
     # Batch Agent Evaluation
     nTraj_eval = 100
-    BatchSim = expert.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch)
+    BatchSim = expert.Simulation_NN(pi_hi_batch, pi_lo_batch, pi_b_batch)
     [trajBatch, controlBatch, OptionsBatch, 
-     TerminationBatch, psiBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval)
+     TerminationBatch, psiBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval, seed)
     AverageRewardBatch = np.sum(rewardBatch)/nTraj_eval
     STDBatch = np.std(rewardBatch)
     RewardBatch_array = np.append(RewardBatch_array, AverageRewardBatch)
     STDBatch_array = np.append(STDBatch_array, STDBatch)
 
     # Online Agent Evaluation
-    OnlineSim = expert.Simulation(pi_hi_online, pi_lo_online, pi_b_online)
+    OnlineSim = expert.Simulation_NN(pi_hi_online, pi_lo_online, pi_b_online)
     [trajOnline, controlOnline, OptionsOnline, 
-     TerminationOnline, psiOnline, rewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval)
+     TerminationOnline, psiOnline, rewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval, seed)
     AverageRewardOnline = np.sum(rewardOnline)/nTraj_eval  
     STDOnline = np.std(rewardOnline)
     RewardOnline_array = np.append(RewardOnline_array, AverageRewardOnline)
@@ -140,3 +146,29 @@ ax_time.set_xlabel('Training Samples')
 ax_time.set_ylabel('Running Time [h]')
 ax_time.set_title('Grid World')
 plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')   
+
+# %% Plot Likelihood 
+
+trial = 1
+
+x_likelihood_batch = np.linspace(1, len(Likelihood_batch_list[trial]), len(Likelihood_batch_list[trial])) 
+x_likelihood_online = np.linspace(1,len(Likelihood_online_list[trial]),len(Likelihood_online_list[trial]))
+
+fig, ax1 = plt.subplots()
+
+color = 'tab:red'
+ax1.set_xlabel('Batch iterations' , color=color)
+ax1.set_ylabel('likelihood')
+ax1.plot(x_likelihood_batch, Likelihood_batch_list[trial], '-d', color=color)
+ax1.tick_params(axis='x', labelcolor=color)
+
+ax2 = ax1.twiny()  # instantiate a second axes that shares the same x-axis
+
+color = 'tab:blue'
+ax2.set_xlabel('Online iterations' , color=color)  # we already handled the x-label with ax1
+ax2.plot(x_likelihood_online, Likelihood_online_list[trial], color=color)
+ax2.tick_params(axis='x', labelcolor=color)
+fig.tight_layout()  # otherwise the right y-label is slightly clipped
+plt.savefig('Figures/likelihood.eps', format='eps')
+plt.show()
+
