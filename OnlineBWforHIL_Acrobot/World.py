@@ -105,7 +105,7 @@ class Acrobot:
                 
             return opt.get_weights()
         
-        def Evaluation(W, n_episodes, max_epoch_per_traj):
+        def Evaluation(W, n_episodes, max_epoch_per_traj, seed):
             def select_action(ob, weights):
                 b1 = np.reshape(weights[0], (1, 1))
                 w1 = np.reshape(weights[1:4], (1, 3))
@@ -118,6 +118,7 @@ class Acrobot:
                 return np.tanh(action) * 2
             
             env = gym.make("Acrobot-v1")
+            env.seed(seed)
             env._max_episode_steps = max_epoch_per_traj
             obs = env.reset()
             size_input = len(obs)
@@ -199,7 +200,11 @@ class Acrobot:
                 """Decaying exploration rate"""
                 return max(min_rate, min(1, 1.0 - math.log10((n  + 1) / 25)))
         
-            def Training(self, n_episodes):
+            def Training(self, n_episodes, seed):
+                np.random.seed(seed)
+                self.env.seed(seed)
+                self.env.action_space.seed(seed)
+                
                 for e in range(n_episodes):
                 
                     print(e, '/', n_episodes)
@@ -228,7 +233,7 @@ class Acrobot:
         
                         # Update Q-Table
                         lr = Acrobot.Expert.learning_rate(self, e)
-                        learnt_value = Acrobot.Expert.Expert_Q_learning.new_Q_value(self, reward , new_state)
+                        learnt_value = Acrobot.Expert.Expert_Q_learning.new_Q_value(self, reward, new_state)
                         old_value = self.Q_table[current_state][action_index]
                         self.Q_table[current_state][action_index] = (1-lr)*old_value + lr*learnt_value
         
@@ -239,8 +244,9 @@ class Acrobot:
                     
                 return self.Q_table
             
-            def Evaluation(self, Q_trained, n_episodes, max_epoch_per_traj):
+            def Evaluation(self, Q_trained, n_episodes, max_epoch_per_traj, seed):
                 self.env._max_episode_steps = max_epoch_per_traj
+                self.env.seed(seed)
                 Reward_array = np.empty((0))
                 obs = self.env.reset()
                 size_input = len(obs)
@@ -249,7 +255,7 @@ class Acrobot:
             
                 for e in range(n_episodes):
                 
-                    print(e, '/', n_episodes)
+                    print('Expert iteration: ', e+1, '/', n_episodes)
                     Reward = 0
                     obs = self.env.reset()
                     TrainingSet = np.append(TrainingSet, obs.reshape(1,len(obs)), 0)
@@ -280,7 +286,7 @@ class Acrobot:
                         Labels = np.append(Labels, action)
         
                         # Render the cartpole environment
-                        self.env.render()
+                        #self.env.render()
                     
                     Reward_array = np.append(Reward_array, Reward) 
                     self.env.close()
@@ -324,7 +330,9 @@ class Acrobot:
             self.pi_b = pi_b  
             self.action_dictionary = np.unique(Labels)
             
-        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories):
+        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories, seed):
+            self.env.seed(seed)
+            np.random.seed(seed)
             traj = [[None]*1 for _ in range(number_of_trajectories)]
             control = [[None]*1 for _ in range(number_of_trajectories)]
             Option = [[None]*1 for _ in range(number_of_trajectories)]

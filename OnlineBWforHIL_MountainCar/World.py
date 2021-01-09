@@ -108,7 +108,9 @@ class MountainCar:
             self.pi_lo = pi_lo
             self.pi_b = pi_b  
             
-        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories):
+        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories, seed):
+            self.env.seed(seed)
+            np.random.seed(seed)            
             traj = [[None]*1 for _ in range(number_of_trajectories)]
             control = [[None]*1 for _ in range(number_of_trajectories)]
             Option = [[None]*1 for _ in range(number_of_trajectories)]

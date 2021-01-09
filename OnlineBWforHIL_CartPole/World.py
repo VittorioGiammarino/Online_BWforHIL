@@ -13,137 +13,6 @@ from sklearn.preprocessing import KBinsDiscretizer
 import time, math, random
 from typing import Tuple
 
-class Pendulum:
-    class Expert:
-        # =============================================================================
-        #         Credit: Richard Brooker https://github.com/RJBrooker/Q-learning-demo-Cartpole-V1/blob/master/cartpole.ipynb
-        # =============================================================================
-        def __init__(self, n_bins, n_bins_action, Q_table):
-            self.env = gym.make('Pendulum-v0')
-            self.n_bins = n_bins
-            self.n_bins_action = n_bins_action
-            self.lower_bounds = [self.env.observation_space.low[0], self.env.observation_space.low[1], self.env.observation_space.low[2]]
-            self.upper_bounds = [self.env.observation_space.high[0], self.env.observation_space.high[1], self.env.observation_space.high[2]]
-            self.lower_bound_torque = [self.env.action_space.low[0]]
-            self.upper_bound_torque = [self.env.action_space.high[0]]
-            self.Q_table = Q_table
-        
-        def discretizer(self, cos_theta, sin_theta, theta_dot) -> Tuple[int,...]:
-            """Convert continues state intro a discrete state"""
-            est = KBinsDiscretizer(n_bins=self.n_bins, encode='ordinal', strategy='uniform')
-            est.fit([self.lower_bounds, self.upper_bounds])
-            return tuple(map(int,est.transform([[cos_theta, sin_theta, theta_dot]])[0]))
-        
-        def action_discretizer(self, action) -> Tuple[int,...]:
-            est = KBinsDiscretizer(n_bins=self.n_bins_action, encode='ordinal', strategy='uniform')
-            est.fit([self.lower_bound_torque, self.upper_bound_torque])
-            return tuple(map(int,est.transform([[action]])[0]))          
-        
-        def policy(self, state : tuple ):
-            """Choosing action based on epsilon-greedy policy"""
-            action_index = np.argmax(self.Q_table[state])
-            return action_index
-        
-        def new_Q_value(self, reward : float ,  new_state : tuple , discount_factor=1 ) -> float:
-            """Temperal diffrence for updating Q-value of state-action pair"""
-            future_optimal_value = np.max(self.Q_table[new_state])
-            learned_value = reward + discount_factor * future_optimal_value
-            return learned_value
-        
-        # Adaptive learning of Learning Rate
-        def learning_rate(self, n : int , min_rate=0.1 ) -> float  :
-            """Decaying learning rate"""
-            return max(min_rate, min(1.0, 1.0 - math.log10((n + 1) / 25)))
-        
-        def exploration_rate(n : int, min_rate= 0.1 ) -> float :
-            """Decaying exploration rate"""
-            return max(min_rate, min(1, 1.0 - math.log10((n  + 1) / 25)))
-        
-        def Training(self, n_episodes):
-            action_array = np.linspace(self.lower_bound_torque,self.upper_bound_torque,self.n_bins_action)
-            for e in range(n_episodes):
-                
-                print(e, '/', n_episodes)
-    
-                # Discretize state into buckets
-                current_state, done = Pendulum.Expert.discretizer(self,*self.env.reset()), False
-    
-                while done==False:
-        
-                    # policy action 
-                    action_index = Pendulum.Expert.policy(self, current_state) # exploit
-        
-                    # insert random action
-                    if np.random.random() < Pendulum.Expert.exploration_rate(e) : 
-                        action_continuous = self.env.action_space.sample()[0] # explore 
-                        action_index = Pendulum.Expert.action_discretizer(self,action_continuous)
-         
-                    # increment enviroment
-                    action = action_array[action_index]
-                    obs, reward, done, _ = self.env.step(action)
-                    new_state = Pendulum.Expert.discretizer(self, *obs)
-        
-                    # Update Q-Table
-                    lr = Pendulum.Expert.learning_rate(self, e)
-                    learnt_value = Pendulum.Expert.new_Q_value(self, reward , new_state)
-                    old_value = self.Q_table[current_state][action_index]
-                    self.Q_table[current_state][action_index] = (1-lr)*old_value + lr*learnt_value
-        
-                    current_state = new_state
-        
-                    # Render the cartpole environment
-                    #self.env.render()
-                    
-            return self.Q_table
-            
-        def Evaluation(self, Q_trained, n_episodes, max_epoch_per_traj):
-            self.env._max_episode_steps = max_epoch_per_traj
-            Reward_array = np.empty((0))
-            obs = self.env.reset()
-            size_input = len(obs)
-            TrainingSet = np.empty((0,size_input))
-            Labels = np.empty((0))
-            
-            action_array = np.linspace(self.lower_bound_torque,self.upper_bound_torque,self.n_bins_action)
-            for e in range(n_episodes):
-                
-                print(e, '/', n_episodes)
-                Reward = 0
-                obs = self.env.reset()
-                TrainingSet = np.append(TrainingSet, obs.reshape(1,len(obs)), 0)
-                
-                # Discretize state into buckets
-                current_state, done = Pendulum.Expert.discretizer(self,*obs), False
-                
-                # policy action 
-                action_index = np.argmax(Q_trained[current_state]) # exploit
-                Labels = np.append(Labels, action_index)
-                
-    
-                while done==False:
-                    
-                    # increment enviroment
-                    action = action_array[action_index]
-                    obs, reward, done, _ = self.env.step(action)
-                    TrainingSet = np.append(TrainingSet, obs.reshape(1,len(obs)), 0)                    
-
-                    new_state = Pendulum.Expert.discretizer(self, *obs)
-                    Reward = Reward + reward
-        
-                    current_state = new_state
-                    
-                    # policy action 
-                    action_index = np.argmax(Q_trained[current_state]) # exploit
-                    Labels = np.append(Labels, action_index)
-        
-                    # Render the cartpole environment
-                    #self.env.render()
-                    
-                Reward_array = np.append(Reward_array, Reward) 
-                    
-            return TrainingSet, Labels, Reward_array  
-
-
 
 class CartPole:
     class Expert:
@@ -182,7 +51,11 @@ class CartPole:
             """Decaying exploration rate"""
             return max(min_rate, min(1, 1.0 - math.log10((n  + 1) / 25)))
         
-        def Training(self, n_episodes):
+        def Training(self, n_episodes, seed):
+            np.random.seed(seed)
+            self.env.seed(seed)
+            self.env.action_space.seed(seed)            
+            
             for e in range(n_episodes):
                 
                 print(e, '/', n_episodes)
@@ -216,8 +89,9 @@ class CartPole:
                     
             return self.Q_table
             
-        def Evaluation(self, Q_trained, n_episodes, max_epoch_per_traj):
+        def Evaluation(self, Q_trained, n_episodes, max_epoch_per_traj, seed):
             self.env._max_episode_steps = max_epoch_per_traj
+            self.env.seed(seed)
             Reward_array = np.empty((0))
             obs = self.env.reset()
             size_input = len(obs)
@@ -226,7 +100,7 @@ class CartPole:
             
             for e in range(n_episodes):
                 
-                print(e, '/', n_episodes)
+                print('Expert iteration: ', e+1, '/', n_episodes)
                 Reward = 0
                 obs = self.env.reset()
                 TrainingSet = np.append(TrainingSet, obs.reshape(1,len(obs)), 0)
@@ -297,7 +171,9 @@ class CartPole:
             self.pi_lo = pi_lo
             self.pi_b = pi_b  
             
-        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories):
+        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories, seed):
+            self.env.seed(seed)
+            np.random.seed(seed)            
             traj = [[None]*1 for _ in range(number_of_trajectories)]
             control = [[None]*1 for _ in range(number_of_trajectories)]
             Option = [[None]*1 for _ in range(number_of_trajectories)]

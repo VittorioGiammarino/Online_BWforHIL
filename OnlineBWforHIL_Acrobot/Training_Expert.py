@@ -14,8 +14,8 @@ n_bins = (8, 8, 8, 8, 4, 4)
 Q_table = np.zeros(n_bins + (2,))
 expert = World.Acrobot.Expert.Expert_Q_learning(n_bins, Q_table)
 
-Q_trained = expert.Training(10000)
-
+seed = 0
+Q_trained = expert.Training(10000, seed)
 
 # %%
 

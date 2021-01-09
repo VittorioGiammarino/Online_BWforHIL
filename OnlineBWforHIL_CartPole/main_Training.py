@@ -24,11 +24,11 @@ expert = World.CartPole.Expert(n_bins, 1, 1, Q_table)
 lower_bounds = [expert.env.observation_space.low[0], -0.3, expert.env.observation_space.low[2], -np.radians(50) ]
 upper_bounds = [expert.env.observation_space.high[0], 0.3, expert.env.observation_space.high[2], np.radians(50) ]
 expert = World.CartPole.Expert(n_bins, lower_bounds, upper_bounds, Q_table)
-max_epoch = 20000
+max_epoch = 1000
 nTraj = 5
 TrainingSet, Labels, Reward = expert.Evaluation(Q_trained, nTraj, max_epoch)
-TrainingSet = np.round(TrainingSet[0:500,:],3)
-Labels = Labels[0:500]
+TrainingSet = np.round(TrainingSet[:,:],3)
+Labels = Labels[:]
 
 # %% Hierarchical policy initialization 
 option_space = 2

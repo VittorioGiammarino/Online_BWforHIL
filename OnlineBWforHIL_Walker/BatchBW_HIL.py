@@ -540,7 +540,7 @@ class BatchHIL:
         
         return likelihood
             
-    def Baum_Welch(self,N):
+    def Baum_Welch(self, N, likelihood_online):
 # =============================================================================
 #         batch BW for HIL
 # =============================================================================
@@ -572,7 +572,9 @@ class BatchHIL:
 
             loss = BatchHIL.OptimizeLossBatch(self, gamma_tilde_reshaped, gamma_reshaped_options, gamma_actions, auxiliary_vector)
             likelihood = np.append(likelihood, BatchHIL.likelihood_approximation(self))
-
+            if likelihood[-1] >= likelihood_online:
+                break        
+            
         print('Maximization done, Total Loss:',float(loss))#float(loss_options+loss_action+loss_termination))
 
         

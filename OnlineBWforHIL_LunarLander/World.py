@@ -82,8 +82,10 @@ class LunarLander:
                 if done: break
             return total_reward
         
-        def Evaluation(n_episodes, max_epoch_per_traj, seed = None):
+        def Evaluation(n_episodes, max_epoch_per_traj, seed):
             env = gym.make("LunarLander-v2")
+            env.seed(seed)
+            env.action_space.seed(seed)
             env._max_episode_steps = max_epoch_per_traj
             Reward_array = np.empty((0))
             obs = env.reset()
@@ -120,7 +122,7 @@ class LunarLander:
                     Labels = np.append(Labels, action)
         
                     # Render the cartpole environment
-                    env.render()
+                    # env.render()
                     
                 Reward_array = np.append(Reward_array, Reward) 
                 env.close()
@@ -165,7 +167,9 @@ class LunarLander:
             self.pi_b = pi_b  
             self.action_dictionary = np.unique(Labels)
             
-        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories):
+        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories, seed):
+            self.env.seed(seed)
+            np.random.seed(seed)            
             traj = [[None]*1 for _ in range(number_of_trajectories)]
             control = [[None]*1 for _ in range(number_of_trajectories)]
             Option = [[None]*1 for _ in range(number_of_trajectories)]

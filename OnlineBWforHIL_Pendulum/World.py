@@ -104,7 +104,7 @@ class Pendulum:
                 
             return opt.get_weights()
         
-        def Evaluation(W, n_episodes, max_epoch_per_traj):
+        def Evaluation(W, n_episodes, max_epoch_per_traj, seed):
             def select_action(ob, weights):
                 b1 = np.reshape(weights[0], (1, 1))
                 w1 = np.reshape(weights[1:4], (1, 3))
@@ -117,6 +117,8 @@ class Pendulum:
                 return np.tanh(action) * 2
             
             env = gym.make("Pendulum-v0")
+            env.seed(seed)
+            env.action_space.seed(seed)
             env._max_episode_steps = max_epoch_per_traj
             obs = env.reset()
             size_input = len(obs)
@@ -327,7 +329,9 @@ class Pendulum:
             self.pi_b = pi_b  
             self.action_dictionary = np.unique(Labels)
             
-        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories):
+        def HierarchicalStochasticSampleTrajMDP(self, max_epoch_per_traj, number_of_trajectories, seed):
+            self.env.seed(seed)
+            np.random.seed(seed)            
             traj = [[None]*1 for _ in range(number_of_trajectories)]
             control = [[None]*1 for _ in range(number_of_trajectories)]
             Option = [[None]*1 for _ in range(number_of_trajectories)]

@@ -242,15 +242,13 @@ class OnlineHIL:
         loss_pi_lo = 0
         
         for at in range(self.action_space):
-            for st in range(StateSpace_size):
-                for ot_past in range(self.option_space):
-                    for ot in range(self.option_space):
-                        state_input = stateSpace[st,:].reshape(1,self.size_input)
-                        loss_pi_hi = loss_pi_hi - phi[ot_past,1,ot,st,at]*kb.log(NN_options(state_input,training=True)[0][ot])
-                        for bt in range(self.termination_space):
-                            state_input = stateSpace[st,:].reshape(1,self.size_input)
-                            loss_pi_lo = loss_pi_lo - phi[ot_past,bt,ot,st,at]*kb.log(NN_actions[ot](state_input,training=True)[0][at])
-                            loss_pi_b = loss_pi_b - phi[ot_past,bt,ot,st,at]*kb.log(NN_termination[ot_past](state_input,training=True)[0][bt])
+            for ot_past in range(self.option_space):
+                for ot in range(self.option_space):
+                    loss_pi_hi = loss_pi_hi - kb.sum(phi[ot_past,1,ot,:,at]*kb.log(NN_options(stateSpace,training=True)[:,ot]))
+                    for bt in range(self.termination_space):
+                        if at==0:
+                            loss_pi_lo = loss_pi_lo - kb.sum(phi[ot_past,bt,ot,:,:]*kb.log(NN_actions[ot](stateSpace,training=True)[:,:]))
+                        loss_pi_b = loss_pi_b - kb.sum(phi[ot_past,bt,ot,:,at]*kb.log(NN_termination[ot_past](stateSpace,training=True)[:,bt]))
                                     
         loss = loss_pi_hi + loss_pi_lo + loss_pi_b
         
@@ -328,7 +326,7 @@ class OnlineHIL:
         P_option_given_obs = np.zeros((self.option_space, 1))
         P_option_given_obs = self.mu.reshape((self.option_space, 1)) 
         phi = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, 
-                        self.action_space, 1))
+                        self.action_space))
                                         
         for t in range(0,len(self.TrainingSet)):
             if t==0:
@@ -383,7 +381,7 @@ class OnlineHIL:
                                     
             phi_h = phi_h_temp
             P_option_given_obs = P_option_given_obs_temp
-            phi = np.sum(phi_h, (5,6))            
+            phi = np.sum(phi_h[:,:,:,:,:,:,:,0], (5,6))             
             
             #M-step 
             if t > T_min:
@@ -405,7 +403,7 @@ class OnlineHIL:
         chi = np.zeros((self.option_space, 1)) #chi filter
         chi = self.mu.reshape((self.option_space, 1)) #chi filter initialization
         phi = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, 
-                        self.action_space, 1))
+                        self.action_space))
         
 
         for t in range(0,len(self.TrainingSet)):
@@ -471,7 +469,7 @@ class OnlineHIL:
                                         
             chi = chi_temp
             rho = rho_temp
-            phi = np.sum(phi_temp,5)
+            phi = np.sum(phi_temp[:,:,:,:,:,:,0],5)
             
             #M-step 
             if t > T_min:

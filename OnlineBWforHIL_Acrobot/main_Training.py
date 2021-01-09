@@ -25,9 +25,10 @@ Q_table = np.zeros(n_bins + (2,))
 expert = World.Acrobot.Expert.Expert_Q_learning(n_bins, Q_table)
 max_epoch = 20000
 nTraj = 5
-TrainingSet, Labels, Reward = expert.Evaluation(Q_trained, nTraj, max_epoch)
-TrainingSet = np.round(TrainingSet[0:700,:],3)
-Labels = Labels[0:700]
+seed = 0
+TrainingSet, Labels, Reward = expert.Evaluation(Q_trained, nTraj, max_epoch, seed)
+TrainingSet = np.round(TrainingSet[:,:],1)
+Labels = Labels[:]
 
 # %% Hierarchical policy initialization 
 option_space = 2
