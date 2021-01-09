@@ -245,7 +245,6 @@ class OnlineHIL:
 #         compute Loss function to minimize
 # =============================================================================
         stateSpace = np.unique(self.TrainingSet, axis=0)
-        StateSpace_size = len(stateSpace)
         loss = 0
         loss_pi_hi = 0
         loss_pi_b = 0
@@ -254,11 +253,11 @@ class OnlineHIL:
         for at in range(self.action_space):
             for ot_past in range(self.option_space):
                 for ot in range(self.option_space):
-                    loss_pi_hi = loss_pi_hi - kb.sum(phi[ot_past,1,ot,:,at]*kb.log(NN_options(stateSpace,training=True)[:,ot]))
+                    loss_pi_hi = loss_pi_hi - kb.sum(phi[ot_past,1,ot,:,at]*kb.log(kb.clip(NN_options(stateSpace,training=True)[:,ot],1e-10,1.0)))
                     for bt in range(self.termination_space):
                         if at==0:
-                            loss_pi_lo = loss_pi_lo - kb.sum(phi[ot_past,bt,ot,:,:]*kb.log(NN_actions[ot](stateSpace,training=True)[:,:]))
-                        loss_pi_b = loss_pi_b - kb.sum(phi[ot_past,bt,ot,:,at]*kb.log(NN_termination[ot_past](stateSpace,training=True)[:,bt]))
+                            loss_pi_lo = loss_pi_lo - kb.sum(phi[ot_past,bt,ot,:,:]*kb.log(kb.clip(NN_actions[ot](stateSpace,training=True)[:,:],1e-10,1.0)))
+                        loss_pi_b = loss_pi_b - kb.sum(phi[ot_past,bt,ot,:,at]*kb.log(kb.clip(NN_termination[ot_past](stateSpace,training=True)[:,bt],1e-10,1.0)))
                                     
         loss = loss_pi_hi + loss_pi_lo + loss_pi_b
         
@@ -277,7 +276,7 @@ class OnlineHIL:
         loss = 0
         T = len(self.TrainingSet)
         if t+1 == T:
-            M_step_epochs = 100
+            M_step_epochs = self.epochs
         else:
             M_step_epochs = self.epochs
                 

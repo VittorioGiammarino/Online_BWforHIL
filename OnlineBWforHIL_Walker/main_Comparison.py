@@ -83,7 +83,7 @@ for i in range(len(nTraj)):
     STDExpert = np.std(Reward)
     STDExpert_array = np.append(STDExpert_array, STDExpert)
     RewardExpert_array = np.append(RewardExpert_array, AverageRewardExpert)
-    
+
     # Batch Agent Evaluation
     nTraj_eval = 100
     BatchSim = World.Walker.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)

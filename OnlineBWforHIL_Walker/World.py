@@ -231,7 +231,7 @@ class Walker:
                 for i in range(1,prob_o_rescaled.shape[0]):
                     prob_o_rescaled[i]=prob_o_rescaled[i]+prob_o_rescaled[i-1]
                 draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
-                o = np.amin(np.where(draw_o<prob_o_rescaled))
+                o = np.amin(np.where(draw_o<=prob_o_rescaled))
                 o_tot = np.append(o_tot,o)
         
                 # Termination
@@ -241,7 +241,10 @@ class Walker:
                 for i in range(1,prob_b_rescaled.shape[1]):
                     prob_b_rescaled[0,i]=prob_b_rescaled[0,i]+prob_b_rescaled[0,i-1]
                 draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.01)
-                b = np.amin(np.where(draw_b<prob_b_rescaled)[1])
+                where = np.where(draw_b<=prob_b_rescaled)[1]
+                if len(where)==0:
+                    print('danger')
+                b = np.amin(np.where(draw_b<=prob_b_rescaled)[1])
                 b_tot = np.append(b_tot,b)
                 if b == 1:
                     b_bool = True
@@ -260,7 +263,7 @@ class Walker:
                 for i in range(1,prob_o_rescaled.shape[1]):
                     prob_o_rescaled[0,i]=prob_o_rescaled[0,i]+prob_o_rescaled[0,i-1]
                 draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
-                o = np.amin(np.where(draw_o<prob_o_rescaled)[1])
+                o = np.amin(np.where(draw_o<=prob_o_rescaled)[1])
                 o_tot = np.append(o_tot,o)
         
                 for k in range(0,max_epoch_per_traj):
@@ -271,7 +274,7 @@ class Walker:
                     for i in range(1,prob_u_rescaled.shape[1]):
                         prob_u_rescaled[0,i]=prob_u_rescaled[0,i]+prob_u_rescaled[0,i-1]
                     draw_u=np.divide(np.random.rand(),np.amin(prob_u)+0.01)
-                    u = np.amin(np.where(draw_u<prob_u_rescaled)[1])
+                    u = np.amin(np.where(draw_u<=prob_u_rescaled)[1])
                     u_tot = np.append(u_tot,u)
             
                     # given action, draw next state
@@ -293,7 +296,7 @@ class Walker:
                     for i in range(1,prob_b_rescaled.shape[1]):
                         prob_b_rescaled[0,i]=prob_b_rescaled[0,i]+prob_b_rescaled[0,i-1]
                     draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.01)
-                    b = np.amin(np.where(draw_b<prob_b_rescaled)[1])
+                    b = np.amin(np.where(draw_b<=prob_b_rescaled)[1])
                     b_tot = np.append(b_tot,b)
                     if b == 1:
                         b_bool = True
@@ -312,7 +315,7 @@ class Walker:
                     for i in range(1,prob_o_rescaled.shape[1]):
                         prob_o_rescaled[0,i]=prob_o_rescaled[0,i]+prob_o_rescaled[0,i-1]
                     draw_o=np.divide(np.random.rand(), np.amin(prob_o)+0.01)
-                    o = np.amin(np.where(draw_o<prob_o_rescaled)[1])
+                    o = np.amin(np.where(draw_o<=prob_o_rescaled)[1])
                     o_tot = np.append(o_tot,o)
             
         
