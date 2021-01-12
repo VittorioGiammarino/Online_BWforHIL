@@ -110,7 +110,7 @@ with open('Comparison/Array_results.npy', 'wb') as f:
     np.save(f, Array_results)
     
 # %% plot Comparison
-Training_samples = max_epoch*nTraj
+Training_samples = np.array([1, 2, 3, 5])
 
 RewardOnline_array = Array_results[0,:]
 RewardBatch_array = Array_results[1,:]
@@ -135,7 +135,7 @@ ax.legend(loc=4, facecolor = '#d8dcd6')
 ax.set_xlabel('Trajectories')
 ax.set_ylabel('Average Reward')
 ax.set_title('Acrobot')
-plt.savefig('Figures/Comparison/Reward_GridWorld_NN.png', format='png')
+plt.savefig('Figures/Comparison/Reward_Acrobat.png', format='png')
 
 
 fig_time, ax_time = plt.subplots()
@@ -147,11 +147,11 @@ ax_time.legend(loc=0, facecolor = '#d8dcd6')
 ax_time.set_xlabel('Trajectories')
 ax_time.set_ylabel('Running Time [h]')
 ax_time.set_title('Acrobot')
-plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')   
+plt.savefig('Figures/Comparison/Time_Acrobat.eps', format='eps')   
 
 # %% Plot Likelihood 
 
-trial = 1
+trial = 3
 
 x_likelihood_batch = np.linspace(1, len(Likelihood_batch_list[trial]), len(Likelihood_batch_list[trial])) 
 x_likelihood_online = np.linspace(1,len(Likelihood_online_list[trial]),len(Likelihood_online_list[trial]))
@@ -171,6 +171,6 @@ ax2.set_xlabel('Online iterations' , color=color)  # we already handled the x-la
 ax2.plot(x_likelihood_online, Likelihood_online_list[trial], color=color)
 ax2.tick_params(axis='x', labelcolor=color)
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Figures/likelihood.eps', format='eps')
+plt.savefig('Figures/likelihood_trial{}.eps'.format(trial), format='eps')
 plt.show()
 
