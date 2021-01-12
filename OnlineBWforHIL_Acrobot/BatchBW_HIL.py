@@ -418,7 +418,7 @@ class BatchHIL:
                 if i!=j:
                     pi_lo_o_i = kb.sum(auxiliary_vector*NN_actions[i](TrainingSet,training=True),1)
                     pi_lo_o_j = kb.sum(auxiliary_vector*NN_actions[j](TrainingSet,training=True),1)
-                    DKL = DKL + kb.sum(pi_lo_o_i*kb.log(pi_lo_o_i/(pi_lo_o_j+epsilon)),0)/T
+                    DKL = DKL + kb.sum(pi_lo_o_i*kb.log(kb.clip(pi_lo_o_i/(pi_lo_o_j+epsilon),1e-10,1.0)),0)/T
                     
         return DKL
     

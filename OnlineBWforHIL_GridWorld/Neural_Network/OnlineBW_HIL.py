@@ -226,7 +226,7 @@ class OnlineHIL:
                 if i!=j:
                     pi_lo_o_i = NN_actions[i](State,training=True)[0,int(Action)]
                     pi_lo_o_j = NN_actions[j](State,training=True)[0,int(Action)]
-                    DKL = DKL + pi_lo_o_i*kb.log(pi_lo_o_i/(pi_lo_o_j+epsilon))
+                    DKL = DKL + pi_lo_o_i*kb.log(kb.clip(pi_lo_o_i/(pi_lo_o_j+epsilon),1e-10,1.0))
                     
         return DKL    
     
