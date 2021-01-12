@@ -63,7 +63,7 @@ Online_time = end_online_time-start_online_time
 #evaluation
 OnlineSim = World.Walker.Simulation(pi_hi_online, pi_lo_online, pi_b_online, Labels)
 [trajOnline, controlOnline, OptionsOnline, 
- TerminationOnline, RewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
+ TerminationOnline, RewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj, seed)
 x, u, o, b = OnlineSim.HILVideoSimulation('Videos/VideosOnline/Simulation', max_epoch)
 
 

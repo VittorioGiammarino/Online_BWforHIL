@@ -59,11 +59,11 @@ for i in range(len(nTraj)):
     Likelihood_online_list.append(likelihood_online)
     
     #Batch BW for HIL with tabular parameterization: Training
-    M_step_epoch = 50
+    M_step_epoch = 20
     size_batch = 32
     if np.mod(len(TrainingSet),size_batch)==0:
         size_batch = size_batch + 1
-    optimizer = keras.optimizers.Adamax(learning_rate=1e-3)    
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-4)    
     Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
     N=15 #number of iterations for the BW algorithm
     start_batch_time = time.time()

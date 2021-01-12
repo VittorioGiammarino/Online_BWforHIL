@@ -17,9 +17,10 @@ import matplotlib.pyplot as plt
 # %% Expert Policy Generation and simulation
 max_epoch = 20000
 nTraj = 5
-TrainingSet, Labels, Reward = World.LunarLander.Expert.Evaluation(nTraj, max_epoch)
-TrainingSet = np.round(TrainingSet[0:700,:],3)
-Labels = Labels[0:700]
+seed = 0
+TrainingSet, Labels, Reward = World.LunarLander.Expert.Evaluation(nTraj, max_epoch, seed)
+TrainingSet = np.round(TrainingSet[0:500,:],3)
+Labels = Labels[0:500]
 
 # %% Hierarchical policy initialization 
 option_space = 2
@@ -31,7 +32,7 @@ optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
 Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer) 
 N=10 #number of iterations for the BW algorithm
 start_batch_time = time.time()
-pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N)
+pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N, likelihood_online)
 end_batch_time = time.time()
 Batch_time = end_batch_time-start_batch_time
 #evaluation

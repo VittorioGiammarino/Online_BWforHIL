@@ -52,7 +52,7 @@ for i in range(len(nTraj)):
     option_space = 2
     
     # Online BW for HIL with tabular parameterization: Training
-    M_step_epoch = 5
+    M_step_epoch = 20
     optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
     Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
     T_min = len(TrainingSet)-100
@@ -64,13 +64,13 @@ for i in range(len(nTraj)):
     Likelihood_online_list.append(likelihood_online)
     
     #Batch BW for HIL with tabular parameterization: Training
-    M_step_epoch = 50
+    M_step_epoch = 30
     size_batch = 32
     if np.mod(len(TrainingSet),size_batch)==0:
         size_batch = size_batch + 1
-    optimizer = keras.optimizers.Adamax(learning_rate=1e-3)    
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-4)    
     Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
-    N=10 #number of iterations for the BW algorithm
+    N=15 #number of iterations for the BW algorithm
     start_batch_time = time.time()
     pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N, likelihood_online[-1])
     end_batch_time = time.time()
@@ -136,7 +136,7 @@ ax.plot(Training_samples, RewardBatch_array, label = 'Batch-BW', c=clrs[1])
 ax.fill_between(Training_samples, RewardBatch_array-STDBatch_array, RewardBatch_array+STDBatch_array ,alpha=0.1, facecolor=clrs[1])
 ax.plot(Training_samples, RewardExpert_array, label='Expert', c=clrs[2])
 ax.fill_between(Training_samples, RewardExpert_array-STDExpert_array, RewardExpert_array+STDExpert_array ,alpha=0.1, facecolor=clrs[2])
-ax.legend(loc=4, facecolor = '#d8dcd6')
+ax.legend(loc=0, facecolor = '#d8dcd6')
 ax.set_xlabel('Training Samples')
 ax.set_ylabel('Average Reward')
 ax.set_title('Grid World')
@@ -156,10 +156,10 @@ plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')
 
 # %% Plot Likelihood 
 
-trial = 1
+trial = 3
 
-x_likelihood_batch = np.linspace(1, len(Likelihood_batch_list[trial]), len(Likelihood_batch_list[trial])) 
-x_likelihood_online = np.linspace(1,len(Likelihood_online_list[trial]),len(Likelihood_online_list[trial]))
+x_likelihood_batch = np.linspace(0, len(Likelihood_batch_list[trial])-1, len(Likelihood_batch_list[trial])) 
+x_likelihood_online = np.linspace(0,len(Likelihood_online_list[trial])-1,len(Likelihood_online_list[trial]))
 
 fig, ax1 = plt.subplots()
 

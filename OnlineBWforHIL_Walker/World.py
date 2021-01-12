@@ -241,9 +241,6 @@ class Walker:
                 for i in range(1,prob_b_rescaled.shape[1]):
                     prob_b_rescaled[0,i]=prob_b_rescaled[0,i]+prob_b_rescaled[0,i-1]
                 draw_b = np.divide(np.random.rand(), np.amin(prob_b)+0.01)
-                where = np.where(draw_b<=prob_b_rescaled)[1]
-                if len(where)==0:
-                    print('danger')
                 b = np.amin(np.where(draw_b<=prob_b_rescaled)[1])
                 b_tot = np.append(b_tot,b)
                 if b == 1:
