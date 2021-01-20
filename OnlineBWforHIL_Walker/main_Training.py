@@ -17,17 +17,17 @@ import matplotlib.pyplot as plt
 # %% Load Data set
 
 with open('ddpg_expert/DataFromExpert/TrainingSet.npy', 'rb') as f:
-    TrainingSet = np.load(f, allow_pickle=True)
+    TrainingSet_tot = np.load(f, allow_pickle=True)
 
 with open('ddpg_expert/DataFromExpert/Labels.npy', 'rb') as f:
-    Labels = np.load(f, allow_pickle=True)
+    Labels_tot = np.load(f, allow_pickle=True)
     
 with open('ddpg_expert/DataFromExpert/Reward.npy', 'rb') as f:
     Reward = np.load(f, allow_pickle=True)
 
 # %% Expert Policy Generation and simulation
-TrainingSet = TrainingSet[0:600,:]
-Labels = Labels[0:600]
+TrainingSet = TrainingSet_tot[0:2000,:]
+Labels = Labels_tot[0:2000]
 
 # %% Hierarchical policy initialization 
 option_space = 2
@@ -37,9 +37,9 @@ M_step_epoch = 50
 size_batch = 33
 optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
 Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer) 
-N=10 #number of iterations for the BW algorithm
+N=50 #number of iterations for the BW algorithm
 start_batch_time = time.time()
-pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N)
+pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N,1)
 end_batch_time = time.time()
 Batch_time = end_batch_time-start_batch_time
 #evaluation
@@ -47,7 +47,7 @@ max_epoch = 20000
 nTraj = 3
 BatchSim = World.Walker.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
 [trajBatch, controlBatch, OptionsBatch, 
- TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
+ TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj, 1)
 x, u, o, b = BatchSim.HILVideoSimulation('Videos/VideosBatch/Simulation', max_epoch)
 
 

@@ -206,8 +206,9 @@ class OnlineHIL:
     def Regularizer_Lb(self, NN_options):
         tau = 1/self.option_space
         stateSpace = np.unique(self.TrainingSet, axis=0)
+        epsilon = 0.000001
         pi_hi = NN_options(stateSpace,training=True)
-        Lb = kb.sum(kb.sqrt(kb.square(kb.sum(pi_hi,0)/pi_hi.shape[0] - tau)))
+        Lb = kb.sum(kb.sqrt(kb.square(kb.sum(pi_hi,0)/pi_hi.shape[0] - tau)+epsilon))
         return Lb
     
     def Regularizer_Lv(self, NN_options):

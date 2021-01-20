@@ -108,7 +108,8 @@ for i in range(len(nTraj)):
     STDOnline_array = np.append(STDOnline_array, STDOnline)
 
 # %%
-Training_samples = max_epoch*nTraj
+Training_samples = np.array([500, 1000, 2000, 4000, 5000, 10000])
+
     
 Array_results = np.concatenate((RewardOnline_array.reshape(1,len(Training_samples)), RewardBatch_array.reshape(1,len(Training_samples)), 
                                 RewardExpert_array.reshape(1,len(Training_samples)), STDOnline_array.reshape(1,len(Training_samples)), 
@@ -119,7 +120,7 @@ with open('Comparison/Array_results.npy', 'wb') as f:
     np.save(f, Array_results)
     
 # %% plot Comparison
-Training_samples = max_epoch*nTraj
+Training_samples = np.array([500, 1000, 2000, 4000, 5000, 10000])
 
 RewardOnline_array = Array_results[0,:]
 RewardBatch_array = Array_results[1,:]
@@ -132,7 +133,7 @@ Time_array_batch = Array_results[7,:]
 
 fig, ax = plt.subplots()
 plt.xscale('log')
-plt.xticks(Training_samples, labels=['0.5k', '1k', '2k', '4k', '5k', '10k', '20k'])
+plt.xticks(Training_samples, labels=['0.5k', '1k', '2k', '4k', '5k', '10k'])
 clrs = sns.color_palette("husl", 5)
 ax.plot(Training_samples, RewardOnline_array, label='Online-BW', c=clrs[0])
 ax.fill_between(Training_samples, RewardOnline_array-STDOnline_array, RewardOnline_array+STDOnline_array ,alpha=0.1, facecolor=clrs[0])
@@ -140,30 +141,30 @@ ax.plot(Training_samples, RewardBatch_array, label = 'Batch-BW', c=clrs[1])
 ax.fill_between(Training_samples, RewardBatch_array-STDBatch_array, RewardBatch_array+STDBatch_array ,alpha=0.1, facecolor=clrs[1])
 ax.plot(Training_samples, RewardExpert_array, label='Expert', c=clrs[2])
 ax.fill_between(Training_samples, RewardExpert_array-STDExpert_array, RewardExpert_array+STDExpert_array ,alpha=0.1, facecolor=clrs[2])
-ax.legend(loc=4, facecolor = '#d8dcd6')
+ax.legend(loc=0, facecolor = '#d8dcd6')
 ax.set_xlabel('Training Samples')
-ax.set_ylabel('Average Reward')
-ax.set_title('Grid World')
-plt.savefig('Figures/Comparison/Reward_GridWorld_NN.png', format='png')
+ax.set_ylabel('Steps to Goal')
+ax.set_title('Montain Car')
+plt.savefig('Figures/Comparison/Reward_Mountain_Car.png', format='png')
 
 
 fig_time, ax_time = plt.subplots()
 plt.xscale('log')
-plt.xticks(Training_samples, labels=['0.5k', '1k', '2k', '4k', '5k', '10k', '20k'])
+plt.xticks(Training_samples, labels=['0.5k', '1k', '2k', '4k', '5k', '10k'])
 ax_time.plot(Training_samples, Time_array_online/3600, label='Online-BW', c=clrs[0])
 ax_time.plot(Training_samples, Time_array_batch/3600,  label = 'Batch-BW', c=clrs[1])
 ax_time.legend(loc=0, facecolor = '#d8dcd6')
 ax_time.set_xlabel('Training Samples')
 ax_time.set_ylabel('Running Time [h]')
-ax_time.set_title('Grid World')
-plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')   
+ax_time.set_title('Montain Car')
+plt.savefig('Figures/Comparison/Time_Mountain_Car.eps', format='eps')   
 
 # %% Plot Likelihood 
 
-trial = 1
+trial = 5
 
-x_likelihood_batch = np.linspace(1, len(Likelihood_batch_list[trial]), len(Likelihood_batch_list[trial])) 
-x_likelihood_online = np.linspace(1,len(Likelihood_online_list[trial]),len(Likelihood_online_list[trial]))
+x_likelihood_batch = np.linspace(0, len(Likelihood_batch_list[trial])-1, len(Likelihood_batch_list[trial])) 
+x_likelihood_online = np.linspace(0,len(Likelihood_online_list[trial])-1, len(Likelihood_online_list[trial]))
 
 fig, ax1 = plt.subplots()
 
@@ -180,6 +181,6 @@ ax2.set_xlabel('Online iterations' , color=color)  # we already handled the x-la
 ax2.plot(x_likelihood_online, Likelihood_online_list[trial], color=color)
 ax2.tick_params(axis='x', labelcolor=color)
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Figures/likelihood.eps', format='eps')
+plt.savefig('Figures/likelihood_trial{}.eps'.format(trial), format='eps')
 plt.show()
 

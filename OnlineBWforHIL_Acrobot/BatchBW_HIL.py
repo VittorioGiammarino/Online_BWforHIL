@@ -401,7 +401,8 @@ class BatchHIL:
     
     def Regularizer_Lb(pi_hi):
         tau = 0.5
-        Lb = kb.sum(kb.sqrt(kb.square(kb.sum(pi_hi,0)/pi_hi.shape[0] - tau)))
+        epsilon = 0.000001
+        Lb = kb.sum(kb.sqrt(kb.square(kb.sum(pi_hi,0)/pi_hi.shape[0] - tau)+epsilon))
         return Lb
     
     def Regularizer_Lv(pi_hi):

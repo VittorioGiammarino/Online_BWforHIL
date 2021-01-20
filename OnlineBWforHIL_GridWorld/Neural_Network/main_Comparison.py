@@ -50,7 +50,7 @@ for i in range(len(nTraj)):
     M_step_epoch = 5
     optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
     Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
-    T_min = len(TrainingSet)-100
+    T_min = len(TrainingSet)-200
     start_online_time = time.time()
     pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min)
     end_online_time = time.time()
@@ -137,7 +137,6 @@ ax.set_ylabel('Average Reward')
 ax.set_title('Grid World')
 plt.savefig('Figures/Comparison/Reward_GridWorld_NN.png', format='png')
 
-
 fig_time, ax_time = plt.subplots()
 plt.xscale('log')
 plt.xticks(Training_samples, labels=['0.5k', '1k', '2k', '4k', '5k', '10k', '20k'])
@@ -151,10 +150,10 @@ plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')
 
 # %% Plot Likelihood 
 
-trial = 1
+trial = 6
 
-x_likelihood_batch = np.linspace(1, len(Likelihood_batch_list[trial]), len(Likelihood_batch_list[trial])) 
-x_likelihood_online = np.linspace(1,len(Likelihood_online_list[trial]),len(Likelihood_online_list[trial]))
+x_likelihood_batch = np.linspace(0, len(Likelihood_batch_list[trial])-1, len(Likelihood_batch_list[trial])) 
+x_likelihood_online = np.linspace(0,len(Likelihood_online_list[trial])-1, len(Likelihood_online_list[trial]))
 
 fig, ax1 = plt.subplots()
 
@@ -171,6 +170,6 @@ ax2.set_xlabel('Online iterations' , color=color)  # we already handled the x-la
 ax2.plot(x_likelihood_online, Likelihood_online_list[trial], color=color)
 ax2.tick_params(axis='x', labelcolor=color)
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Figures/likelihood.eps', format='eps')
+plt.savefig('Figures/likelihood_trial{}.eps'.format(trial), format='eps')
 plt.show()
 

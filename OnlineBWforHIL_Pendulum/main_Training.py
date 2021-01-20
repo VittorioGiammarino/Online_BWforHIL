@@ -21,10 +21,11 @@ with open('Models/Saved_Model_Expert/W_weights.npy', 'rb') as f:
 
 # %%
 max_epoch = 200
-nTraj = 5
-TrainingSet, Labels, Reward = World.Pendulum.Expert.Evaluation(weights, nTraj, max_epoch)
-TrainingSet = np.round(TrainingSet[0:600,:],3)
-Labels = np.round(Labels[0:600],1)
+nTraj = 10
+seed = 0
+TrainingSet, Labels, Reward = World.Pendulum.Expert.Evaluation(weights, nTraj, max_epoch, seed)
+TrainingSet = np.round(TrainingSet[0:2000,:],3)
+Labels = np.round(Labels[0:2000],1)
 
 # %% Hierarchical policy initialization 
 option_space = 2
@@ -32,11 +33,11 @@ option_space = 2
 # %% Batch BW for HIL with tabular parameterization: Training
 M_step_epoch = 50
 size_batch = 33
-optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
+optimizer = keras.optimizers.Adamax(learning_rate=1e-1)
 Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer) 
-N=10 #number of iterations for the BW algorithm
+N=50 #number of iterations for the BW algorithm
 start_batch_time = time.time()
-pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N)
+pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N, 1)
 end_batch_time = time.time()
 Batch_time = end_batch_time-start_batch_time
 #evaluation

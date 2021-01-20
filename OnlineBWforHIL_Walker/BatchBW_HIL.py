@@ -107,8 +107,8 @@ class NN_PI_HI:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(100, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1),
-                                   bias_initializer=keras.initializers.Zeros()),
+                                   kernel_initializer = keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1),
+                                   bias_initializer = keras.initializers.Zeros()),
                 keras.layers.Dense(self.option_space),
                 keras.layers.Softmax()
                                 ])                
@@ -402,7 +402,8 @@ class BatchHIL:
     
     def Regularizer_Lb(pi_hi):
         tau = 0.5
-        Lb = kb.sum(kb.sqrt(kb.square(kb.sum(pi_hi,0)/pi_hi.shape[0] - tau)))
+        epsilon = 0.000001
+        Lb = kb.sum(kb.sqrt(kb.square(kb.sum(pi_hi,0)/pi_hi.shape[0] - tau)+epsilon))
         return Lb
     
     def Regularizer_Lv(pi_hi):

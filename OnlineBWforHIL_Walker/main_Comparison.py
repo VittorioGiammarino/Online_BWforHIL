@@ -19,10 +19,10 @@ from tensorflow import keras
 # %% Load Data set
 
 with open('ddpg_expert/DataFromExpert/TrainingSet.npy', 'rb') as f:
-    TrainingSet = np.load(f, allow_pickle=True)
+    TrainingSet_tot = np.load(f, allow_pickle=True)
 
 with open('ddpg_expert/DataFromExpert/Labels.npy', 'rb') as f:
-    Labels = np.load(f, allow_pickle=True)
+    Labels_tot = np.load(f, allow_pickle=True)
     
 with open('ddpg_expert/DataFromExpert/Reward.npy', 'rb') as f:
     Reward = np.load(f, allow_pickle=True)
@@ -47,15 +47,15 @@ Likelihood_batch_list = []
 seed = 0
 
 for i in range(len(nTraj)):
-    TrainingSet = TrainingSet[0:nTraj[i],:]
-    Labels = Labels[0:nTraj[i]]
+    TrainingSet = TrainingSet_tot[0:nTraj[i],:]
+    Labels = Labels_tot[0:nTraj[i]]
     option_space = 2
     
     # Online BW for HIL with tabular parameterization: Training
     M_step_epoch = 20
     optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
     Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
-    T_min = len(TrainingSet)-100
+    T_min = len(TrainingSet)-150
     start_online_time = time.time()
     pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min)
     end_online_time = time.time()
@@ -64,13 +64,13 @@ for i in range(len(nTraj)):
     Likelihood_online_list.append(likelihood_online)
     
     #Batch BW for HIL with tabular parameterization: Training
-    M_step_epoch = 30
+    M_step_epoch = 50
     size_batch = 32
     if np.mod(len(TrainingSet),size_batch)==0:
         size_batch = size_batch + 1
-    optimizer = keras.optimizers.Adamax(learning_rate=1e-4)    
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-2)    
     Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
-    N=15 #number of iterations for the BW algorithm
+    N = 15 #number of iterations for the BW algorithm
     start_batch_time = time.time()
     pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N, likelihood_online[-1])
     end_batch_time = time.time()

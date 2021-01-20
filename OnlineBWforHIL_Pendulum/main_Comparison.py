@@ -21,8 +21,9 @@ from tensorflow import keras
 with open('Models/Saved_Model_Expert/W_weights.npy', 'rb') as f:
     weights = np.load(f, allow_pickle=True)
 
-max_epoch = 1000 #max iterations in the simulation per trajectory
+max_epoch = 500 #max iterations in the simulation per trajectory
 nTraj = np.array([1, 2, 3, 5, 10, 15, 20]) #number of trajectories generated
+
 
 #%%
 Time_array_batch = np.empty((0))
@@ -40,12 +41,12 @@ seed = 0
 
 for i in range(len(nTraj)):
     TrainingSet, Labels, rewardExpert = World.Pendulum.Expert.Evaluation(weights, nTraj[i], max_epoch, seed)
-    TrainingSet = np.round(TrainingSet[:,:],4)
+    TrainingSet = np.round(TrainingSet[:,:],3)
     Labels = np.round(Labels[:],1)
     option_space = 2
     
     # Online BW for HIL with tabular parameterization: Training
-    M_step_epoch = 5
+    M_step_epoch = 10
     optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
     Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
     T_min = len(TrainingSet)-100
@@ -55,22 +56,22 @@ for i in range(len(nTraj)):
     Online_time = end_online_time-start_online_time
     Time_array_online = np.append(Time_array_online, Online_time)  
     Likelihood_online_list.append(likelihood_online)
-    
+
     #Batch BW for HIL with tabular parameterization: Training
-    M_step_epoch = 10
+    M_step_epoch = 50
     size_batch = 32
     if np.mod(len(TrainingSet),size_batch)==0:
         size_batch = size_batch + 1
-    optimizer = keras.optimizers.Adamax(learning_rate=1e-4)    
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-2)    
     Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
-    N=10 #number of iterations for the BW algorithm
+    N=20 #number of iterations for the BW algorithm
     start_batch_time = time.time()
     pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N, likelihood_online[-1])
     end_batch_time = time.time()
     Batch_time = end_batch_time-start_batch_time
     Time_array_batch = np.append(Time_array_batch, Batch_time)
     Likelihood_batch_list.append(likelihood_batch)
-    
+  
     # Expert
     AverageRewardExpert = np.sum(rewardExpert)/nTraj[i]
     STDExpert = np.std(rewardExpert)
@@ -151,8 +152,8 @@ plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')
 
 trial = 1
 
-x_likelihood_batch = np.linspace(1, len(Likelihood_batch_list[trial]), len(Likelihood_batch_list[trial])) 
-x_likelihood_online = np.linspace(1,len(Likelihood_online_list[trial]),len(Likelihood_online_list[trial]))
+x_likelihood_batch = np.linspace(0, len(Likelihood_batch_list[trial])-1, len(Likelihood_batch_list[trial])) 
+x_likelihood_online = np.linspace(0, len(Likelihood_online_list[trial])-1, len(Likelihood_online_list[trial]))
 
 fig, ax1 = plt.subplots()
 
@@ -169,6 +170,6 @@ ax2.set_xlabel('Online iterations' , color=color)  # we already handled the x-la
 ax2.plot(x_likelihood_online, Likelihood_online_list[trial], color=color)
 ax2.tick_params(axis='x', labelcolor=color)
 fig.tight_layout()  # otherwise the right y-label is slightly clipped
-plt.savefig('Figures/likelihood.eps', format='eps')
+plt.savefig('Figures/likelihood_trial{}.eps'.format(trial), format='eps')
 plt.show()
 
