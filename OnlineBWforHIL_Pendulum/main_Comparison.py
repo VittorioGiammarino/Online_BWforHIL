@@ -146,11 +146,11 @@ ax_time.legend(loc=0, facecolor = '#d8dcd6')
 ax_time.set_xlabel('Training Samples')
 ax_time.set_ylabel('Running Time [h]')
 ax_time.set_title('Grid World')
-plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')   
+plt.savefig('Figures/Comparison/Time_Pendulum_NN.eps', format='eps')   
 
 # %% Plot Likelihood 
 
-trial = 7
+trial = 0
 
 x_likelihood_batch = np.linspace(0, len(Likelihood_batch_list[trial])-1, len(Likelihood_batch_list[trial])) 
 x_likelihood_online = np.linspace(0, len(Likelihood_online_list[trial])-1, len(Likelihood_online_list[trial]))
