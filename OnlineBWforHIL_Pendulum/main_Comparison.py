@@ -132,9 +132,9 @@ ax.plot(Training_samples, RewardExpert_array, label='Expert', c=clrs[2])
 ax.fill_between(Training_samples, RewardExpert_array-STDExpert_array, RewardExpert_array+STDExpert_array ,alpha=0.1, facecolor=clrs[2])
 ax.legend(loc=4, facecolor = '#d8dcd6')
 ax.set_xlabel('Training Samples')
-ax.set_ylabel('Average Reward')
+ax.set_ylabel('Average Loss')
 ax.set_title('Grid World')
-plt.savefig('Figures/Comparison/Reward_GridWorld_NN.png', format='png')
+plt.savefig('Figures/Comparison/Reward_Pendulum.png', format='png')
 
 
 fig_time, ax_time = plt.subplots()
@@ -150,7 +150,7 @@ plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')
 
 # %% Plot Likelihood 
 
-trial = 1
+trial = 7
 
 x_likelihood_batch = np.linspace(0, len(Likelihood_batch_list[trial])-1, len(Likelihood_batch_list[trial])) 
 x_likelihood_online = np.linspace(0, len(Likelihood_online_list[trial])-1, len(Likelihood_online_list[trial]))
