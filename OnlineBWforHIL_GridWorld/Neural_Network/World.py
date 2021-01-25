@@ -1391,7 +1391,7 @@ class TwoRewards:
                 self.pi_lo = pi_lo
                 self.pi_b = pi_b
                 
-            def UpdateReward(self, psi, x):
+            def UpdateReward(self, psi, x, Seed):
                 epsilon1 = 0.9
                 u1 = np.random.rand()
                 epsilon2 = 0.8
@@ -1506,7 +1506,7 @@ class TwoRewards:
                             r = r + 1 
             
                         # Randomly update the reward
-                        psi = TwoRewards.Expert.Simulation_NN.UpdateReward(self, psi, x[k])
+                        psi = TwoRewards.Expert.Simulation_NN.UpdateReward(self, psi, x[k], Seed)
                         psi_tot = np.append(psi_tot, psi)
             
                         # Select Termination

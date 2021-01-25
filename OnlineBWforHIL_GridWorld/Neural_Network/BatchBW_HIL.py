@@ -11,6 +11,7 @@ import World
 import tensorflow as tf 
 from tensorflow import keras
 import tensorflow.keras.backend as kb
+import time
 
 def ProcessData(traj,control,psi,stateSpace):
 # =============================================================================
@@ -532,6 +533,8 @@ class BatchHIL:
         
         T = self.TrainingSet.shape[0]
         likelihood = BatchHIL.likelihood_approximation(self)
+        time_init = time.time()
+        Time_list = [0]
             
         for n in range(N):
             print('iter Loss', n+1, '/', N)
@@ -556,6 +559,7 @@ class BatchHIL:
     
 
             loss = BatchHIL.OptimizeLossBatch(self, gamma_tilde_reshaped, gamma_reshaped_options, gamma_actions, auxiliary_vector)
+            Time_list.append(time.time() - time_init)
             likelihood = np.append(likelihood, BatchHIL.likelihood_approximation(self))
             if likelihood[-1] >= likelihood_online:
                 break
@@ -563,7 +567,7 @@ class BatchHIL:
         print('Maximization done, Total Loss:',float(loss))#float(loss_options+loss_action+loss_termination))
 
         
-        return self.NN_options, self.NN_actions, self.NN_termination, likelihood   
+        return self.NN_options, self.NN_actions, self.NN_termination, likelihood, Time_list   
 
             
         

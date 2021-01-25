@@ -11,6 +11,7 @@ import World
 import tensorflow as tf 
 from tensorflow import keras
 import tensorflow.keras.backend as kb
+import time
 
 def ProcessData(traj,control,psi,stateSpace):
 # =============================================================================
@@ -272,7 +273,7 @@ class OnlineHIL:
             M_step_epochs = self.epochs
                 
         for epoch in range(M_step_epochs):
-            print('\nStart m-step for sample ', t,' iteration ', epoch+1)
+            #print('\nStart m-step for sample ', t,' iteration ', epoch+1)
         
             with tf.GradientTape() as tape:
                 for i in range(self.option_space):
@@ -289,7 +290,7 @@ class OnlineHIL:
                 self.optimizer.apply_gradients(zip(grads[i+1][:], self.NN_actions[j].trainable_weights))
                 j = j+1
             self.optimizer.apply_gradients(zip(grads[-1][:], self.NN_options.trainable_weights))
-            print('options loss:', float(loss))
+            #print('options loss:', float(loss))
         
         return loss        
     
@@ -323,13 +324,15 @@ class OnlineHIL:
                     
         return auxiliary_vector
         
-    def Online_Baum_Welch_together(self, T_min):
+    def Online_Baum_Welch_together(self, T_min, StoppingTime):
         likelihood = OnlineHIL.likelihood_approximation(self)
         TrainingSetID = OnlineHIL.TrainingSetID(self)
         stateSpace = np.unique(self.TrainingSet, axis=0)
         StateSpace_size = len(stateSpace)
         
-        
+        time_init = time.time()
+        Time_list = [0]        
+               
         zi = np.zeros((self.option_space, self.termination_space, self.option_space, 1))
         phi_h = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size,
                          self.action_space, self.termination_space, self.option_space,1))
@@ -396,17 +399,24 @@ class OnlineHIL:
             #M-step 
             if t > T_min:
                 loss = OnlineHIL.OptimizeLoss(self, phi, t)
+                Time_list.append(time.time() - time_init)
                 likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
+                
+                if Time_list[-1] >= StoppingTime:
+                    break                
                 
         print('Maximization done, Total Loss:',float(loss))
                 
-        return self.NN_options, self.NN_actions, self.NN_termination, likelihood
+        return self.NN_options, self.NN_actions, self.NN_termination, likelihood, Time_list
                 
-    def Online_Baum_Welch(self, T_min):
+    def Online_Baum_Welch(self, T_min, StoppingTime):
         likelihood = OnlineHIL.likelihood_approximation(self)
         TrainingSetID = OnlineHIL.TrainingSetID(self)
         stateSpace = np.unique(self.TrainingSet, axis=0)
         StateSpace_size = len(stateSpace)
+        
+        time_init = time.time()
+        Time_list = [0]
         
         rho = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, 
                         self.action_space, self.option_space, 1)) #rho filter initialiazation
@@ -484,11 +494,15 @@ class OnlineHIL:
             #M-step 
             if t > T_min:
                 loss = OnlineHIL.OptimizeLoss(self, phi, t)
+                Time_list.append(time.time() - time_init)
                 likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
+                
+            if Time_list[-1] >= StoppingTime:
+                break
                   
         print('Maximization done, Total Loss:',float(loss))
                 
-        return self.NN_options, self.NN_actions, self.NN_termination, likelihood              
+        return self.NN_options, self.NN_actions, self.NN_termination, likelihood, Time_list              
                 
                                         
                                         
