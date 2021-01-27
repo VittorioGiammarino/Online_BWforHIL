@@ -18,6 +18,7 @@ from tensorflow import keras
 import multiprocessing
 import multiprocessing.pool
 
+
 # %% Expert Data
 
 with open('DataFromExpert/TrainingSet_Array.npy', 'rb') as f:
@@ -26,8 +27,22 @@ with open('DataFromExpert/TrainingSet_Array.npy', 'rb') as f:
 with open('DataFromExpert/Labels_Array.npy', 'rb') as f:
     Labels_Array = np.load(f)
     
-with open('Comparison/Batch/List_TimeBatch.npy', 'rb') as f:
-    List_TimeBatch = np.load(f)
+with open('Comparison/Batch/results_batch.npy', 'rb') as f:
+    results_batch = np.load(f, allow_pickle=True).tolist()
+    
+# %% pre-processing
+
+List_TimeBatch = []
+
+for seed in range(len(results_batch)):
+    if seed == 0:
+        List_TimeBatch.append(results_batch[seed][0][0])
+    else:
+        List_TimeBatch[0] = np.add(List_TimeBatch[0],results_batch[seed][0][0])
+    
+# normalize 
+List_TimeBatch[0] = np.divide(List_TimeBatch[0],len(results_batch))
+
     
 # %%
 expert = World.TwoRewards.Expert()
@@ -35,7 +50,7 @@ pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
 ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
 
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = nTraj = np.array([1, 2]) #np.array([1, 2, 5, 10, 20, 30, 50])#number of trajectories generated
+nTraj = nTraj = np.array([1, 2, 5, 10, 20, 30, 50])#number of trajectories generated
 
 #%%
 
@@ -108,7 +123,7 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
     Labels_tot = Labels_Array[seed, :, :]
     TimeBatch = List_TimeBatch[0]
         
-    pool = multiprocessing.Pool(processes=len(nTraj))
+    pool = multiprocessing.Pool(processes=3)
     args = [(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed) for i in range(len(nTraj))]
     givenSeed_training_results = pool.starmap(DifferentTrainingSet, args) 
     
@@ -129,7 +144,6 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
     List_TimeLikelihoodOnline.append(time_likelihood_online_list)
         
     return List_TimeOnline, List_RewardOnline, List_STDOnline, List_LikelihoodOnline, List_TimeLikelihoodOnline
-
 
 pool = MyPool(10)
 args = [(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj) for seed in range(10)]

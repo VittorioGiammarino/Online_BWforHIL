@@ -104,7 +104,7 @@ with open('Comparison/Batch/List_LikelihoodBatch.npy', 'wb') as f:
     np.save(f, List_LikelihoodBatch)
     
 with open('Comparison/Batch/List_TimeLikelihoodBatch.npy', 'wb') as f:
-    np.save(f, List_TimeLikelihoodBatch)
+    np.save(f, List_TimeLikelihood)
         
 
 
