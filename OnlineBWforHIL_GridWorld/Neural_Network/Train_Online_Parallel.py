@@ -18,7 +18,6 @@ from tensorflow import keras
 import multiprocessing
 import multiprocessing.pool
 
-
 # %% Expert Data
 
 with open('DataFromExpert/TrainingSet_Array.npy', 'rb') as f:
