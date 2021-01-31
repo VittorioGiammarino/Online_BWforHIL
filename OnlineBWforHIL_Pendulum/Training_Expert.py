@@ -11,9 +11,7 @@ import numpy as np
 # %%
 W = World.Pendulum.Expert.train()
 
-
-# %%
-
 with open('Models/Saved_Model_Expert/W_weights.npy', 'wb') as f:
     np.save(f, W)
+
 

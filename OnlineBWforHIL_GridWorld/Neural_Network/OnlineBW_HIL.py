@@ -497,8 +497,8 @@ class OnlineHIL:
                 Time_list.append(time.time() - time_init)
                 likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
                 
-            if Time_list[-1] >= StoppingTime:
-                break
+                if Time_list[-1] >= StoppingTime:
+                    break
                   
         print('Maximization done, Total Loss:',float(loss))
                 
