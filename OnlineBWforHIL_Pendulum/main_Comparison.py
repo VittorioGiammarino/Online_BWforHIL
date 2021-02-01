@@ -6,7 +6,6 @@ Created on Wed Dec 16 17:36:12 2020
 @author: vittorio
 """
 
-
 import World 
 import BatchBW_HIL 
 import OnlineBW_HIL
@@ -72,7 +71,7 @@ List_STDOnline[0] = np.divide(List_STDOnline[0], len(results_batch))
 # %% Plot
 
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10])
+nTraj = np.array([1, 2, 5, 10, 20, 30, 50])
 Samples = max_epoch*nTraj
 
 Reward_Expert = np.sum(Reward_Array)/(Reward_Array.shape[0]*Reward_Array.shape[1])
@@ -116,7 +115,6 @@ ax1.tick_params(axis='x', labelcolor='k')
 ax1.legend(loc=0, facecolor = '#d8dcd6')
 ax1.set_title('{} Training Samples'.format(Samples[trial]))
 plt.savefig('Figures/likelihood_comparison_Samples{}_Seed{}.eps'.format(Samples[trial], seed), format='eps')
-
 
 # %%
 

@@ -72,8 +72,8 @@ List_STDOnline[0] = np.divide(List_STDOnline[0], len(results_batch))
 # %% Plot
 
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10])
-Samples = max_epoch*nTraj
+nTraj = np.array([100, 200, 500, 1000, 2000, 3000, 5000])
+Samples = nTraj
 
 Reward_Expert = np.sum(Reward_Array)/(Reward_Array.shape[0]*Reward_Array.shape[1])
 STDExpert = np.sum(np.std(Reward_Array, axis = 1))/len(np.std(Reward_Array, axis = 1))

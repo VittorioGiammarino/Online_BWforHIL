@@ -11,6 +11,7 @@ import World
 import tensorflow as tf 
 from tensorflow import keras
 import tensorflow.keras.backend as kb
+import time
 
 def ProcessData(traj,control,psi,stateSpace):
 # =============================================================================
@@ -40,15 +41,15 @@ class NN_PI_LO:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(30, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=0),
                                    bias_initializer=keras.initializers.Zeros()),
-                keras.layers.Dense(self.action_space),
+                keras.layers.Dense(self.action_space, kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1)),
                 keras.layers.Softmax()
                                  ])              
         return model
     
     def NN_model_plot(self,model):
-        tf.keras.utils.plot_model(model, to_file='Figures/FiguresBatch/NN_pi_lo.png', 
+        tf.keras.utils.plot_model(model, to_file='Figures/FiguresOnline/NN_pi_lo.png', 
                                   show_shapes=True, 
                                   show_layer_names=True,
                                   expand_nested=True)
@@ -70,15 +71,15 @@ class NN_PI_B:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(30, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=2),
                                    bias_initializer=keras.initializers.Zeros()),
-                keras.layers.Dense(self.termination_space),
+                keras.layers.Dense(self.termination_space, kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=3)),
                 keras.layers.Softmax()
                                  ])               
         return model
     
     def NN_model_plot(self,model):
-        tf.keras.utils.plot_model(model, to_file='Figures/FiguresBatch/NN_pi_b.png', 
+        tf.keras.utils.plot_model(model, to_file='Figures/FiguresOnline/NN_pi_b.png', 
                                   show_shapes=True, 
                                   show_layer_names=True,
                                   expand_nested=True)
@@ -100,15 +101,15 @@ class NN_PI_HI:
     def NN_model(self):
         model = keras.Sequential([
                 keras.layers.Dense(100, activation='relu', input_shape=(self.size_input,),
-                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=1),
+                                   kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=4),
                                    bias_initializer=keras.initializers.Zeros()),
-                keras.layers.Dense(self.option_space),
+                keras.layers.Dense(self.option_space, kernel_initializer=keras.initializers.RandomUniform(minval=-0.5, maxval=0.5, seed=5)),
                 keras.layers.Softmax()
                                 ])                
         return model
     
     def NN_model_plot(self,model):
-        tf.keras.utils.plot_model(model, to_file='Figures/FiguresBatch/NN_pi_hi.png', 
+        tf.keras.utils.plot_model(model, to_file='Figures/FiguresOnline/NN_pi_hi.png', 
                                   show_shapes=True, 
                                   show_layer_names=True,
                                   expand_nested=True)                
@@ -313,12 +314,14 @@ class OnlineHIL:
         
         return likelihood    
         
-    def Online_Baum_Welch_together(self, T_min):
+    def Online_Baum_Welch_together(self, T_min, StoppingTime):
         likelihood = OnlineHIL.likelihood_approximation(self)
         TrainingSetID = OnlineHIL.TrainingSetID(self)
         stateSpace = np.unique(self.TrainingSet, axis=0)
         StateSpace_size = len(stateSpace)
         
+        time_init = time.time()
+        Time_list = [0]         
         
         zi = np.zeros((self.option_space, self.termination_space, self.option_space, 1))
         phi_h = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size,
@@ -386,17 +389,24 @@ class OnlineHIL:
             #M-step 
             if t > T_min:
                 loss = OnlineHIL.OptimizeLoss(self, phi, t)
+                Time_list.append(time.time() - time_init)
                 likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
+                
+                if Time_list[-1] >= StoppingTime:
+                    break     
                 
         print('Maximization done, Total Loss:',float(loss))
                 
-        return self.NN_options, self.NN_actions, self.NN_termination, likelihood
+        return self.NN_options, self.NN_actions, self.NN_termination, likelihood, Time_list
                 
-    def Online_Baum_Welch(self, T_min):
+    def Online_Baum_Welch(self, T_min, StoppingTime):
         likelihood = OnlineHIL.likelihood_approximation(self)
         TrainingSetID = OnlineHIL.TrainingSetID(self)
         stateSpace = np.unique(self.TrainingSet, axis=0)
         StateSpace_size = len(stateSpace)
+        
+        time_init = time.time()
+        Time_list = [0]        
         
         rho = np.zeros((self.option_space, self.termination_space, self.option_space, StateSpace_size, 
                         self.action_space, self.option_space, 1)) #rho filter initialiazation
@@ -474,11 +484,15 @@ class OnlineHIL:
             #M-step 
             if t > T_min:
                 loss = OnlineHIL.OptimizeLoss(self, phi, t)
+                Time_list.append(time.time() - time_init)
                 likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
+                
+                if Time_list[-1] >= StoppingTime:
+                    break
                   
         print('Maximization done, Total Loss:',float(loss))
                 
-        return self.NN_options, self.NN_actions, self.NN_termination, likelihood              
+        return self.NN_options, self.NN_actions, self.NN_termination, likelihood, Time_list                 
                 
                                         
                                         

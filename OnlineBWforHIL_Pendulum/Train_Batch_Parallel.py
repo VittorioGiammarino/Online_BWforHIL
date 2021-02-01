@@ -46,8 +46,8 @@ class MyPool(multiprocessing.pool.Pool):
 
 def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, seed):
     max_epoch = 100    
-    TrainingSet = TrainingSet_tot[0:max_epoch*nTraj[i],:]
-    Labels = Labels_tot[0:max_epoch*nTraj[i]]
+    TrainingSet = np.round(TrainingSet_tot[0:max_epoch*nTraj[i],:],3)
+    Labels = np.round(Labels_tot[0:max_epoch*nTraj[i]],1)
     option_space = 2
     
     #Batch BW for HIL with tabular parameterization: Training
