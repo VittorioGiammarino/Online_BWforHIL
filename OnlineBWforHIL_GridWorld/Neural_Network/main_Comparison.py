@@ -100,7 +100,7 @@ List_STDOnline[0] = np.divide(List_STDOnline[0], len(results_batch))
 # %% Plot
 
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10])
+nTraj = np.array([1, 2, 5, 10, 20, 30, 50])
 Samples = max_epoch*nTraj
 
 Reward_Expert = np.sum(Reward_Array)/(Reward_Array.shape[0]*Reward_Array.shape[1])
@@ -111,7 +111,7 @@ plt.xscale('log')
 plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k'])
 clrs = sns.color_palette("husl", 5)
 ax.plot(Samples, List_RewardOnline[0], label='Online-BW', c=clrs[0])
-ax.fill_between(Samples, List_RewardOnline[0]-List_STDOnline[0], List_RewardOnline[0]-List_STDOnline[0], alpha=0.1, facecolor=clrs[0])
+ax.fill_between(Samples, List_RewardOnline[0]-List_STDOnline[0], List_RewardOnline[0]+List_STDOnline[0], alpha=0.1, facecolor=clrs[0])
 ax.plot(Samples, List_RewardBatch[0], label = 'Batch-BW', c=clrs[1])
 ax.fill_between(Samples, List_RewardBatch[0]-List_STDBatch[0], List_RewardBatch[0]+List_STDBatch[0], alpha=0.1, facecolor=clrs[1])
 ax.plot(Samples, Reward_Expert*np.ones(len(nTraj)), label='Expert', c=clrs[2])
@@ -133,8 +133,8 @@ ax_time.set_ylabel('Running Time [h]')
 ax_time.set_title('Grid World')
 plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')   
 
-seed = 5
-trial = 2
+seed = 9
+trial = 6
 fig, ax1 = plt.subplots()
 ax1.set_xlabel('time [h]' , color='k')
 ax1.set_ylabel('likelihood')

@@ -49,7 +49,7 @@ pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
 ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
 
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = nTraj = np.array([1, 2, 5, 10, 20, 30, 50])#number of trajectories generated
+nTraj = np.array([1, 2, 5, 10, 20, 30, 50])#number of trajectories generated
 
 #%%
 
