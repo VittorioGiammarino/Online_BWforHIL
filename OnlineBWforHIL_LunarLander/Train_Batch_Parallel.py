@@ -21,10 +21,10 @@ import multiprocessing.pool
 # %% Expert Data
 
 with open('DataFromExpert/TrainingSet_Array.npy', 'rb') as f:
-    TrainingSet_Array = np.load(f)
+    TrainingSet_Array = np.load(f, allow_pickle=True).tolist()
     
 with open('DataFromExpert/Labels_Array.npy', 'rb') as f:
-    Labels_Array = np.load(f)
+    Labels_Array = np.load(f, allow_pickle=True).tolist()
     
 # %%
 
@@ -98,10 +98,10 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     Likelihood_batch_list = []
     time_likelihood_batch_list =[]
 
-    TrainingSet_tot = TrainingSet_Array[seed, :, :]
-    Labels_tot = Labels_Array[seed, :, :]
+    TrainingSet_tot = TrainingSet_Array[seed]
+    Labels_tot = Labels_Array[seed]
         
-    pool = multiprocessing.Pool(processes=3)
+    pool = multiprocessing.Pool(processes=4)
     args = [(i, nTraj, TrainingSet_tot, Labels_tot, seed) for i in range(len(nTraj))]
     givenSeed_training_results = pool.starmap(DifferentTrainingSet, args) 
     
