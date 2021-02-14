@@ -20,10 +20,10 @@ import multiprocessing.pool
 # %% Expert Data
 
 with open('DataFromExpert/TrainingSet_Array.npy', 'rb') as f:
-    TrainingSet_Array = np.load(f)
+    TrainingSet_Array = np.load(f, allow_pickle=True).tolist()
     
 with open('DataFromExpert/Labels_Array.npy', 'rb') as f:
-    Labels_Array = np.load(f)
+    Labels_Array = np.load(f, allow_pickle=True).tolist()
     
 with open('Comparison/Batch/results_batch.npy', 'rb') as f:
     results_batch = np.load(f, allow_pickle=True).tolist()
@@ -63,8 +63,8 @@ class MyPool(multiprocessing.pool.Pool):
 
 def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed):
     max_epoch = 200
-    TrainingSet = np.concatenate((TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:]),axis=0)
-    Labels = np.concatenate((Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]]),axis=0)
+    TrainingSet = np.concatenate((TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:]),axis=0)
+    Labels = np.concatenate((Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]]),axis=0)
     option_space = 2
         
     #Stopping Time
@@ -88,7 +88,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed)
     # Online Agent Evaluation
     OnlineSim = World.LunarLander.Simulation(pi_hi_online, pi_lo_online, pi_b_online, Labels)
     [trajOnline, controlOnline, OptionsOnline, 
-    TerminationOnline, psiOnline, rewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj_eval, seed)
+    TerminationOnline, rewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj_eval, seed)
     AverageRewardOnline = np.sum(rewardOnline)/nTraj_eval  
     STDOnline = np.std(rewardOnline)
     # RewardOnline_array = np.append(RewardOnline_array, AverageRewardOnline)
@@ -112,11 +112,11 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
     Likelihood_online_list = []
     time_likelihood_online_list =[]
 
-    TrainingSet_tot = TrainingSet_Array[seed, :, :]
-    Labels_tot = Labels_Array[seed, :, :]
+    TrainingSet_tot = TrainingSet_Array[seed]
+    Labels_tot = Labels_Array[seed]
     TimeBatch = List_TimeBatch[0]
         
-    pool = multiprocessing.Pool(processes=3)
+    pool = multiprocessing.Pool(processes=4)
     args = [(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed) for i in range(len(nTraj))]
     givenSeed_training_results = pool.starmap(DifferentTrainingSet, args) 
     

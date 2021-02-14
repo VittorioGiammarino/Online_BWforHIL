@@ -73,7 +73,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, seed):
     nTraj_eval = 100
     BatchSim = World.LunarLander.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
     [trajBatch, controlBatch, OptionsBatch, 
-    TerminationBatch, psiBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval, seed)
+    TerminationBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval, seed)
     AverageRewardBatch = np.sum(rewardBatch)/nTraj_eval
     STDBatch = np.std(rewardBatch)
     # RewardBatch_array = np.append(RewardBatch_array, AverageRewardBatch)

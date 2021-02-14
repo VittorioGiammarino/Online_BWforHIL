@@ -282,7 +282,7 @@ class OnlineHIL:
             M_step_epochs = self.epochs
                 
         for epoch in range(M_step_epochs):
-            print('\nStart m-step for sample ', t,' iteration ', epoch+1)
+            # print('\nStart m-step for sample ', t,' iteration ', epoch+1)
         
             with tf.GradientTape() as tape:
                 for i in range(self.option_space):
@@ -299,7 +299,7 @@ class OnlineHIL:
                 self.optimizer.apply_gradients(zip(grads[i+1][:], self.NN_actions[j].trainable_weights))
                 j = j+1
             self.optimizer.apply_gradients(zip(grads[-1][:], self.NN_options.trainable_weights))
-            print('options loss:', float(loss))
+            # print('options loss:', float(loss))
         
         return loss        
     
