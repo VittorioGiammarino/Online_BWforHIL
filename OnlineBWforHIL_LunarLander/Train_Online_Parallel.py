@@ -74,7 +74,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed)
     M_step_epoch = 30
     optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
     Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
-    T_min = len(TrainingSet)/(4) - 20
+    T_min = len(TrainingSet)/(2) - 20
     start_online_time = time.time()
     pi_hi_online, pi_lo_online, pi_b_online, likelihood_online, time_per_iteration = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, StoppingTime)
     end_online_time = time.time()
