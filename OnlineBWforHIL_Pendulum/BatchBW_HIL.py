@@ -278,7 +278,8 @@ class BatchHIL:
     def Alpha(self):
         alpha = np.empty((self.option_space,self.termination_space,len(self.TrainingSet)))
         for t in range(len(self.TrainingSet)):
-            print('alpha iter', t+1, '/', len(self.TrainingSet))
+            if t == 0:
+                print('alpha iter', t+1, '/', len(self.TrainingSet))
             if t ==0:
                 state = self.TrainingSet[t,:].reshape(1,len(self.TrainingSet[t,:]))
                 action = self.Labels[t]
@@ -300,7 +301,8 @@ class BatchHIL:
     
         for t_raw in range(len(self.TrainingSet)-1):
             t = len(self.TrainingSet) - (t_raw+1)
-            print('beta iter', t_raw+1, '/', len(self.TrainingSet)-1)
+            if t_raw == 0:
+                print('beta iter', t_raw+1, '/', len(self.TrainingSet)-1)
             state = self.TrainingSet[t,:].reshape(1,len(self.TrainingSet[t,:]))
             action = self.Labels[t]
             beta[:,:,t-1] = BatchHIL.BackwardRecursion(beta[:,:,t], action, self.NN_options, 
@@ -342,7 +344,8 @@ class BatchHIL:
     def Gamma(self, alpha, beta):
         gamma = np.empty((self.option_space,self.termination_space,len(self.TrainingSet)))
         for t in range(len(self.TrainingSet)):
-            print('gamma iter', t+1, '/', len(self.TrainingSet))
+            if t == 0:
+                print('gamma iter', t+1, '/', len(self.TrainingSet))
             gamma[:,:,t]=BatchHIL.Smoothing(self.option_space, self.termination_space, alpha[:,:,t], beta[:,:,t])
         
         return gamma
@@ -350,7 +353,8 @@ class BatchHIL:
     def GammaTilde(self, alpha, beta):
         gamma_tilde = np.zeros((self.option_space,self.termination_space,len(self.TrainingSet)))
         for t in range(1,len(self.TrainingSet)):
-            print('gamma tilde iter', t, '/', len(self.TrainingSet)-1)
+            if t == 1:
+                print('gamma tilde iter', t, '/', len(self.TrainingSet)-1)
             state = self.TrainingSet[t,:].reshape(1,len(self.TrainingSet[t,:]))
             action = self.Labels[t]
             gamma_tilde[:,:,t]=BatchHIL.DoubleSmoothing(beta[:,:,t], alpha[:,:,t-1], action, 
@@ -491,10 +495,10 @@ class BatchHIL:
         n_batches = np.int(self.TrainingSet.shape[0]/self.size_batch)
 
         for epoch in range(self.epochs):
-            print("\nStart of epoch %d" % (epoch,))
+            # print("\nStart of epoch %d" % (epoch,))
             
             for n in range(n_batches):
-                print("\n Batch %d" % (n+1,))
+                # print("\n Batch %d" % (n+1,))
         
                 with tf.GradientTape() as tape:
                     for i in range(self.option_space):
@@ -516,7 +520,7 @@ class BatchHIL:
                     self.optimizer.apply_gradients(zip(grads[i+1][:], self.NN_actions[j].trainable_weights))
                     j = j+1
                 self.optimizer.apply_gradients(zip(grads[-1][:], self.NN_options.trainable_weights))
-                print('loss:', float(loss))
+                # print('loss:', float(loss))
         
         return loss   
     

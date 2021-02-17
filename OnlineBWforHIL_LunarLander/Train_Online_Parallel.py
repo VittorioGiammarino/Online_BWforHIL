@@ -43,7 +43,7 @@ List_TimeBatch[0] = np.divide(List_TimeBatch[0],len(results_batch))
    
 # %%
 max_epoch = 200 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10, 15, 20, 25]) #number of trajectories generated
+nTraj = np.array([10])#np.array([1, 2, 5, 10, 15, 20, 25]) #number of trajectories generated
 
 #%%
 
@@ -97,7 +97,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed)
     return Online_time, likelihood_online, time_per_iteration, AverageRewardOnline, STDOnline
 
 
-def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj):
+def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj, i):
     #seed
     List_TimeOnline = []
     List_RewardOnline = []
@@ -116,19 +116,18 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
     Labels_tot = Labels_Array[seed]
     TimeBatch = List_TimeBatch[0]
         
-    pool = multiprocessing.Pool(processes=4)
-    args = [(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed) for i in range(len(nTraj))]
+    pool = multiprocessing.Pool(processes=1)
+    args = [(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed)]
     givenSeed_training_results = pool.starmap(DifferentTrainingSet, args) 
     
     pool.close()
     pool.join()
     
-    for i in range(len(nTraj)):
-        Time_array_online = np.append(Time_array_online, givenSeed_training_results[i][0]) 
-        Likelihood_online_list.append(givenSeed_training_results[i][1])
-        time_likelihood_online_list.append(givenSeed_training_results[i][2])
-        RewardOnline_array = np.append(RewardOnline_array, givenSeed_training_results[i][3])
-        STDOnline_array = np.append(STDOnline_array, givenSeed_training_results[i][4])
+    Time_array_online = np.append(Time_array_online, givenSeed_training_results[0][0]) 
+    Likelihood_online_list.append(givenSeed_training_results[0][1])
+    time_likelihood_online_list.append(givenSeed_training_results[0][2])
+    RewardOnline_array = np.append(RewardOnline_array, givenSeed_training_results[0][3])
+    STDOnline_array = np.append(STDOnline_array, givenSeed_training_results[0][4])
         
     List_TimeOnline.append(Time_array_online)
     List_RewardOnline.append(RewardOnline_array)
@@ -138,11 +137,16 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
         
     return List_TimeOnline, List_RewardOnline, List_STDOnline, List_LikelihoodOnline, List_TimeLikelihoodOnline
 
-pool = MyPool(10)
-args = [(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj) for seed in range(10)]
-results_online = pool.starmap(train, args) 
-pool.close()
-pool.join()
+
+#results_online = []
+for i in range(len(nTraj)):
+    pool = MyPool(3)
+    args = [(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj, i) for seed in range(3)]
+    partial_results = pool.starmap(train, args) 
+    pool.close()
+    pool.join()
+    
+    results_online.append(partial_results)
 
 # %%
 

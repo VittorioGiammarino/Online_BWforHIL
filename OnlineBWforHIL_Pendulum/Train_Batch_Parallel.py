@@ -70,7 +70,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, seed):
     nTraj_eval = 100
     BatchSim = World.Pendulum.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
     [trajBatch, controlBatch, OptionsBatch, 
-    TerminationBatch, psiBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval, seed)
+    TerminationBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval, seed)
     AverageRewardBatch = np.sum(rewardBatch)/nTraj_eval
     STDBatch = np.std(rewardBatch)
     # RewardBatch_array = np.append(RewardBatch_array, AverageRewardBatch)
@@ -96,9 +96,9 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     time_likelihood_batch_list =[]
 
     TrainingSet_tot = TrainingSet_Array[seed, :, :]
-    Labels_tot = Labels_Array[seed, :, :]
+    Labels_tot = Labels_Array[seed, :]
         
-    pool = multiprocessing.Pool(processes=3)
+    pool = multiprocessing.Pool(processes=5)
     args = [(i, nTraj, TrainingSet_tot, Labels_tot, seed) for i in range(len(nTraj))]
     givenSeed_training_results = pool.starmap(DifferentTrainingSet, args) 
     
@@ -121,8 +121,9 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     return List_TimeBatch, List_RewardBatch, List_STDBatch, List_LikelihoodBatch, List_TimeLikelihoodBatch
 
 
-pool = MyPool(10)
-args = [(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj) for seed in range(10)]
+Nseed = 5
+pool = MyPool(Nseed)
+args = [(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj) for seed in range(Nseed)]
 results_batch = pool.starmap(train, args) 
 pool.close()
 pool.join()
