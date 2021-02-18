@@ -68,7 +68,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed)
     option_space = 2
         
     #Stopping Time
-    StoppingTime = TimeBatch[i]
+    StoppingTime = TimeBatch[3]
         
     # Online BW for HIL with tabular parameterization: Training
     M_step_epoch = 30
