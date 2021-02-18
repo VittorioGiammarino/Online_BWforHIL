@@ -26,48 +26,57 @@ with open('Comparison/Batch/results_batch.npy', 'rb') as f:
 with open('Comparison/Online/results_online.npy', 'rb') as f:
     results_online = np.load(f, allow_pickle=True).tolist()
     
-# %% pre-processing
+# %% pre-processing batch
 
 List_TimeBatch = []
 List_RewardBatch = []
 List_STDBatch = []
 List_LikelihoodBatch = []
 List_TimeLikelihoodBatch = []
-List_TimeOnline = []
-List_RewardOnline = []
-List_STDOnline = []
-List_LikelihoodOnline = []
-List_TimeLikelihoodOnline = []
 
 for seed in range(len(results_batch)):
     if seed == 0:
         List_TimeBatch.append(results_batch[seed][0][0])
         List_RewardBatch.append(results_batch[seed][1][0])
         List_STDBatch.append(results_batch[seed][2][0])
-        List_TimeOnline.append(results_online[seed][0][0])
-        List_RewardOnline.append(results_online[seed][1][0])
-        List_STDOnline.append(results_online[seed][2][0])
+
     else:
         List_TimeBatch[0] = np.add(List_TimeBatch[0],results_batch[seed][0][0])
         List_RewardBatch[0] = np.add(List_RewardBatch[0], results_batch[seed][1][0])
         List_STDBatch[0] = np.add(List_STDBatch[0], results_batch[seed][2][0])
-        List_TimeOnline[0] = np.add(List_TimeOnline[0], results_online[seed][0][0])
-        List_RewardOnline[0] = np.add(List_RewardOnline[0], results_online[seed][1][0])
-        List_STDOnline[0] = np.add(List_STDOnline[0], results_online[seed][2][0])
-    
+
     List_LikelihoodBatch.append(results_batch[seed][3][0])
     List_TimeLikelihoodBatch.append(results_batch[seed][4][0])
-    List_LikelihoodOnline.append(results_online[seed][3][0])
-    List_TimeLikelihoodOnline.append(results_online[seed][4][0])
        
 # normalize 
 List_TimeBatch[0] = np.divide(List_TimeBatch[0],len(results_batch))
 List_RewardBatch[0] = np.divide(List_RewardBatch[0], len(results_batch))
 List_STDBatch[0] = np.divide(List_STDBatch[0], len(results_batch))
-List_TimeOnline[0] = np.divide(List_TimeOnline[0], len(results_batch))
-List_RewardOnline[0] = np.divide(List_RewardOnline[0], len(results_batch))
-List_STDOnline[0] = np.divide(List_STDOnline[0], len(results_batch))
 
+List_RewardBatch = np.zeros((len(results_batch), len(results_batch[seed][1][0])))
+
+for trajs in range(len(results_batch[seed][1][0])):
+    for seed in range(len(results_batch)):
+        List_RewardBatch[seed, trajs] = results_batch[seed][1][0][trajs]
+
+List_STDBatch = np.std(List_RewardBatch, axis=0)
+List_RewardBatch = np.mean(List_RewardBatch, axis=0)
+
+
+# %% pre-processing online
+
+List_RewardOnline = np.zeros((len(results_online)))
+List_STDOnline = np.zeros((len(results_online)))
+
+for trajs in range(len(results_online)):
+    Nseed = len(results_online[trajs])
+    temp_reward = np.zeros((Nseed))
+    for seed in range(Nseed):
+        temp_reward[seed] = results_online[trajs][seed][1][0][0]
+        
+    List_RewardOnline[trajs] = np.mean(temp_reward)
+    List_STDOnline[trajs] = np.std(temp_reward)
+    
 
 # %% Plot
 max_epoch = 200 #max iterations in the simulation per trajectory
@@ -77,40 +86,42 @@ Samples = max_epoch*nTraj
 Reward_Expert = np.sum(Reward_Array)/(Reward_Array.shape[0]*Reward_Array.shape[1])
 STDExpert = np.sum(np.std(Reward_Array, axis = 1))/len(np.std(Reward_Array, axis = 1))
 
+size = len(List_RewardOnline)
+
 fig, ax = plt.subplots()
 plt.xscale('log')
-plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k'])
+plt.xticks(Samples, labels=['200', '400', '1000', '2k', '3k'])
 clrs = sns.color_palette("husl", 5)
-ax.plot(Samples, List_RewardOnline[0], label='Online-BW', c=clrs[0])
-ax.fill_between(Samples, List_RewardOnline[0]-List_STDOnline[0], List_RewardOnline[0]-List_STDOnline[0], alpha=0.1, facecolor=clrs[0])
-ax.plot(Samples, List_RewardBatch[0], label = 'Batch-BW', c=clrs[1])
-ax.fill_between(Samples, List_RewardBatch[0]-List_STDBatch[0], List_RewardBatch[0]+List_STDBatch[0], alpha=0.1, facecolor=clrs[1])
-ax.plot(Samples, Reward_Expert*np.ones(len(nTraj)), label='Expert', c=clrs[2])
-ax.fill_between(Samples, Reward_Expert*np.ones(len(nTraj))-STDExpert, Reward_Expert+STDExpert, alpha=0.1, facecolor=clrs[2])
+ax.plot(Samples[0:size], List_RewardOnline, label='Online-BW', c=clrs[0])
+ax.fill_between(Samples[0:size], List_RewardOnline-List_STDOnline, List_RewardOnline+List_STDOnline, alpha=0.1, facecolor=clrs[0])
+ax.plot(Samples[0:size], List_RewardBatch[0:size], label = 'Batch-BW', c=clrs[1])
+ax.fill_between(Samples[0:size], List_RewardBatch[0:size]-List_STDBatch[0:size], List_RewardBatch[0:size]+List_STDBatch[0:size], alpha=0.1, facecolor=clrs[1])
+ax.plot(Samples[0:size], Reward_Expert*np.ones(size), label='Expert', c=clrs[2])
+# ax.fill_between(Samples[0:size], Reward_Expert*np.ones(size)-STDExpert, Reward_Expert+STDExpert, alpha=0.1, facecolor=clrs[2])
 ax.legend(loc=4, facecolor = '#d8dcd6')
 ax.set_xlabel('Training Samples')
 ax.set_ylabel('Average Reward')
-ax.set_title('Grid World')
-plt.savefig('Figures/Comparison/Reward_GridWorld_NN.png', format='png')
+ax.set_title('Lunar Lander')
+plt.savefig('Figures/Comparison/Reward_LL.png', format='png')
 
-fig_time, ax_time = plt.subplots()
-plt.xscale('log')
-plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k'])
-ax_time.plot(Samples, List_TimeOnline[0]/3600, label='Online-BW', c=clrs[0])
-ax_time.plot(Samples, List_TimeBatch[0]/3600,  label = 'Batch-BW', c=clrs[1])
-ax_time.legend(loc=0, facecolor = '#d8dcd6')
-ax_time.set_xlabel('Training Samples')
-ax_time.set_ylabel('Running Time [h]')
-ax_time.set_title('Grid World')
-plt.savefig('Figures/Comparison/Time_GridWorld_NN.eps', format='eps')   
+# fig_time, ax_time = plt.subplots()
+# plt.xscale('log')
+# plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k'])
+# ax_time.plot(Samples, List_TimeOnline[0]/3600, label='Online-BW', c=clrs[0])
+# ax_time.plot(Samples, List_TimeBatch[0]/3600,  label = 'Batch-BW', c=clrs[1])
+# ax_time.legend(loc=0, facecolor = '#d8dcd6')
+# ax_time.set_xlabel('Training Samples')
+# ax_time.set_ylabel('Running Time [h]')
+# ax_time.set_title('Grid World')
+# plt.savefig('Figures/Comparison/Time_LL.eps', format='eps')   
 
-seed = 5
-trial = 2
+seed = 0
+trial = 0
 fig, ax1 = plt.subplots()
 ax1.set_xlabel('time [h]' , color='k')
 ax1.set_ylabel('likelihood')
 ax1.plot(np.divide(List_TimeLikelihoodBatch[seed][trial],3600), List_LikelihoodBatch[seed][trial], '-d', color='tab:red', label='Batch-BW')
-ax1.plot(np.divide(List_TimeLikelihoodOnline[seed][trial][:],3600), List_LikelihoodOnline[seed][trial][:], '-', color='tab:blue', label='Online-BW')
+ax1.plot(np.divide(results_online[trial][seed][4][0][0],3600), results_online[trial][seed][3][0][0], '-', color='tab:blue', label='Online-BW')
 ax1.tick_params(axis='x', labelcolor='k')
 ax1.legend(loc=0, facecolor = '#d8dcd6')
 ax1.set_title('{} Training Samples'.format(Samples[trial]))
