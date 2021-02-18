@@ -35,17 +35,18 @@ option_space = 2
 # %% Batch BW for HIL with tabular parameterization: Training
 M_step_epoch = 50
 size_batch = 33
-optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
+optimizer = keras.optimizers.Adamax(learning_rate=1e-1)
 Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer) 
-N=50 #number of iterations for the BW algorithm
+N=10 #number of iterations for the BW algorithm
 start_batch_time = time.time()
-pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N,1)
+pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch, time_per_iteration = Agent_BatchHIL.Baum_Welch(N,1)
 end_batch_time = time.time()
 Batch_time = end_batch_time-start_batch_time
 #evaluation
 max_epoch = 20000
-nTraj = 3
-BatchSim = World.Walker.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
+nTraj = 20
+# BatchSim = World.Walker.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
+BatchSim = World.Walker.Simulation(Agent_BatchHIL.NN_options, Agent_BatchHIL.NN_actions, Agent_BatchHIL.NN_termination, Labels)
 [trajBatch, controlBatch, OptionsBatch, 
  TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj, 1)
 x, u, o, b = BatchSim.HILVideoSimulation('Videos/VideosBatch/Simulation', max_epoch)
