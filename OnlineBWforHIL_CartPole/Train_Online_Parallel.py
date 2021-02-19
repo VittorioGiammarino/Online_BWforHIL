@@ -44,7 +44,7 @@ List_TimeBatch[0] = np.divide(List_TimeBatch[0],len(results_batch))
 # %%
 
 max_epoch = 500 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 3, 5, 6, 8, 10]) #number of trajectories generated
+nTraj = np.array([0.2, 0.5, 1, 2, 4, 10]) #number of trajectories generated
 
 #%%
 
@@ -64,8 +64,8 @@ class MyPool(multiprocessing.pool.Pool):
 
 def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed):
     max_epoch = 500
-    TrainingSet = np.concatenate((TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:]),axis=0)
-    Labels = np.concatenate((Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]]),axis=0)
+    TrainingSet = np.concatenate((TrainingSet_tot[0:int(max_epoch*nTraj[i]),:],TrainingSet_tot[0:int(max_epoch*nTraj[i]),:]),axis=0)
+    Labels = np.concatenate((Labels_tot[0:int(max_epoch*nTraj[i])],Labels_tot[0:int(max_epoch*nTraj[i])]),axis=0)
     option_space = 2
         
     #Stopping Time
@@ -75,7 +75,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed)
     M_step_epoch = 30
     optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
     Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer)
-    T_min = len(TrainingSet)/(4) - 20
+    T_min = len(TrainingSet)/(2) - 20
     start_online_time = time.time()
     pi_hi_online, pi_lo_online, pi_b_online, likelihood_online, time_per_iteration = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, StoppingTime)
     end_online_time = time.time()
@@ -114,7 +114,7 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
     time_likelihood_online_list =[]
 
     TrainingSet_tot = TrainingSet_Array[seed, :, :]
-    Labels_tot = Labels_Array[seed, :, :]
+    Labels_tot = Labels_Array[seed, :]
     TimeBatch = List_TimeBatch[0]
         
     pool = multiprocessing.Pool(processes=3)
@@ -139,8 +139,9 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
         
     return List_TimeOnline, List_RewardOnline, List_STDOnline, List_LikelihoodOnline, List_TimeLikelihoodOnline
 
-pool = MyPool(10)
-args = [(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj) for seed in range(10)]
+Nseed = 5
+pool = MyPool(Nseed)
+args = [(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj) for seed in range(Nseed)]
 results_online = pool.starmap(train, args) 
 pool.close()
 pool.join()

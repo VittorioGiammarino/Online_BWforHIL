@@ -43,7 +43,7 @@ List_TimeBatch[0] = np.divide(List_TimeBatch[0],len(results_batch))
    
 # %%
 max_epoch = 200 #max iterations in the simulation per trajectory
-nTraj = np.array([10])#np.array([1, 2, 5, 10, 15, 20, 25]) #number of trajectories generated
+nTraj = np.array([1, 2, 5, 10, 15, 20, 25]) #number of trajectories generated
 
 #%%
 
@@ -68,7 +68,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed)
     option_space = 2
         
     #Stopping Time
-    StoppingTime = TimeBatch[3]
+    StoppingTime = TimeBatch[i]
         
     # Online BW for HIL with tabular parameterization: Training
     M_step_epoch = 30
@@ -137,11 +137,11 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
         
     return List_TimeOnline, List_RewardOnline, List_STDOnline, List_LikelihoodOnline, List_TimeLikelihoodOnline
 
-
-#results_online = []
+Nseed = 5
+results_online = []
 for i in range(len(nTraj)):
-    pool = MyPool(3)
-    args = [(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj, i) for seed in range(3)]
+    pool = MyPool(Nseed)
+    args = [(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTraj, i) for seed in range(Nseed)]
     partial_results = pool.starmap(train, args) 
     pool.close()
     pool.join()

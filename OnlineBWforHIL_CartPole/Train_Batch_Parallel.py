@@ -27,7 +27,7 @@ with open('DataFromExpert/Labels_Array.npy', 'rb') as f:
 # %%
 
 max_epoch = 500 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 3, 5, 6, 8, 10]) #number of trajectories generated
+nTraj = np.array([0.2, 0.5, 1, 2, 4, 10]) #number of trajectories generated
 
 # %%
 
@@ -47,8 +47,8 @@ class MyPool(multiprocessing.pool.Pool):
 
 def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, seed):
     max_epoch = 500    
-    TrainingSet = TrainingSet_tot[0:max_epoch*nTraj[i],:]
-    Labels = Labels_tot[0:max_epoch*nTraj[i]]
+    TrainingSet = TrainingSet_tot[0:int(max_epoch*nTraj[i]),:]
+    Labels = Labels_tot[0:int(max_epoch*nTraj[i])]
     option_space = 2
     
     #Batch BW for HIL with tabular parameterization: Training
@@ -71,7 +71,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, seed):
     nTraj_eval = 100
     BatchSim = World.CartPole.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch)
     [trajBatch, controlBatch, OptionsBatch, 
-    TerminationBatch, psiBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval, seed)
+    TerminationBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj_eval, seed)
     AverageRewardBatch = np.sum(rewardBatch)/nTraj_eval
     STDBatch = np.std(rewardBatch)
     # RewardBatch_array = np.append(RewardBatch_array, AverageRewardBatch)
@@ -97,9 +97,9 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     time_likelihood_batch_list =[]
 
     TrainingSet_tot = TrainingSet_Array[seed, :, :]
-    Labels_tot = Labels_Array[seed, :, :]
+    Labels_tot = Labels_Array[seed, :]
         
-    pool = multiprocessing.Pool(processes=3)
+    pool = multiprocessing.Pool(processes=5)
     args = [(i, nTraj, TrainingSet_tot, Labels_tot, seed) for i in range(len(nTraj))]
     givenSeed_training_results = pool.starmap(DifferentTrainingSet, args) 
     
@@ -122,8 +122,9 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     return List_TimeBatch, List_RewardBatch, List_STDBatch, List_LikelihoodBatch, List_TimeLikelihoodBatch
 
 
-pool = MyPool(10)
-args = [(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj) for seed in range(10)]
+Nseed = 5
+pool = MyPool(Nseed)
+args = [(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj) for seed in range(Nseed)]
 results_batch = pool.starmap(train, args) 
 pool.close()
 pool.join()
