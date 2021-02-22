@@ -122,11 +122,11 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
     pool.close()
     pool.join()
     
-    Time_array_online = np.append(Time_array_online, givenSeed_training_results[i][0]) 
-    Likelihood_online_list.append(givenSeed_training_results[i][1])
-    time_likelihood_online_list.append(givenSeed_training_results[i][2])
-    RewardOnline_array = np.append(RewardOnline_array, givenSeed_training_results[i][3])
-    STDOnline_array = np.append(STDOnline_array, givenSeed_training_results[i][4])
+    Time_array_online = np.append(Time_array_online, givenSeed_training_results[0][0]) 
+    Likelihood_online_list.append(givenSeed_training_results[0][1])
+    time_likelihood_online_list.append(givenSeed_training_results[0][2])
+    RewardOnline_array = np.append(RewardOnline_array, givenSeed_training_results[0][3])
+    STDOnline_array = np.append(STDOnline_array, givenSeed_training_results[0][4])
         
     List_TimeOnline.append(Time_array_online)
     List_RewardOnline.append(RewardOnline_array)
