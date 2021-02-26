@@ -158,10 +158,10 @@ fig, ax = plt.subplots()
 plt.xscale('log')
 plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k'])
 clrs = sns.color_palette("husl", 5)
-ax.plot(Samples, List_RewardOnline[0:size]/Reward_Expert, label='Online-BW', c=clrs[0])
+ax.plot(Samples, List_RewardOnline[0:size]/Reward_Expert, '-d', label='Online-BW', c=clrs[0])
 ax.fill_between(Samples, List_RewardOnline[0:size]/Reward_Expert-List_STDOnline[0:size]/Reward_Expert, 
                 List_RewardOnline[0:size]/Reward_Expert+List_STDOnline[0:size]/Reward_Expert, alpha=0.1, facecolor=clrs[0])
-ax.plot(Samples, List_RewardBatch[0:size]/Reward_Expert, label = 'Batch-BW', c=clrs[1])
+ax.plot(Samples, List_RewardBatch[0:size]/Reward_Expert, '-d', label = 'Batch-BW', c=clrs[1])
 ax.fill_between(Samples, List_RewardBatch[0:size]/Reward_Expert-List_STDBatch[0:size]/Reward_Expert, 
                 List_RewardBatch[0:size]/Reward_Expert+List_STDBatch[0:size]/Reward_Expert, alpha=0.1, facecolor=clrs[1])
 ax.plot(Samples, Reward_Expert*np.ones(len(nTraj))/Reward_Expert, label='Expert', c=clrs[2])

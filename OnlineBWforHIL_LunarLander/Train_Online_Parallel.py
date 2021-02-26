@@ -43,7 +43,7 @@ List_TimeBatch[0] = np.divide(List_TimeBatch[0],len(results_batch))
    
 # %%
 max_epoch = 200 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10, 15, 20, 25]) #number of trajectories generated
+nTraj = np.array([1, 2, 5, 10]) #number of trajectories generated
 
 #%%
 
@@ -137,7 +137,7 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
         
     return List_TimeOnline, List_RewardOnline, List_STDOnline, List_LikelihoodOnline, List_TimeLikelihoodOnline
 
-Nseed = 5
+Nseed = 7
 results_online = []
 for i in range(len(nTraj)):
     pool = MyPool(Nseed)
