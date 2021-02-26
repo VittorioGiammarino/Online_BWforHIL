@@ -31,7 +31,7 @@ pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
 ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
 
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10, 20, 30, 50]) #number of trajectories generated
+nTraj = np.array([1, 2, 5, 10, 20])#, 30, 50]) #number of trajectories generated
 
 # %%
 
@@ -60,7 +60,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, seed):
     size_batch = 32
     if np.mod(len(TrainingSet),size_batch)==0:
         size_batch = size_batch + 1
-    optimizer = keras.optimizers.Adamax(learning_rate=1e-3)    
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-2)    
     Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
     N=20 #number of iterations for the BW algorithm
     start_batch_time = time.time()
@@ -103,7 +103,7 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     TrainingSet_tot = TrainingSet_Array[seed, :, :]
     Labels_tot = Labels_Array[seed, :, :]
         
-    pool = multiprocessing.Pool(processes=3)
+    pool = multiprocessing.Pool(processes=1)
     args = [(i, nTraj, TrainingSet_tot, Labels_tot, seed) for i in range(len(nTraj))]
     givenSeed_training_results = pool.starmap(DifferentTrainingSet, args) 
     
@@ -126,8 +126,8 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     return List_TimeBatch, List_RewardBatch, List_STDBatch, List_LikelihoodBatch, List_TimeLikelihoodBatch
 
 
-pool = MyPool(10)
-args = [(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj) for seed in range(10)]
+pool = MyPool(30)
+args = [(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj) for seed in range(30)]
 results_batch = pool.starmap(train, args) 
 pool.close()
 pool.join()

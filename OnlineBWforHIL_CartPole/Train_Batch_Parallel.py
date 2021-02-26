@@ -26,8 +26,8 @@ with open('DataFromExpert/Labels_Array.npy', 'rb') as f:
     
 # %%
 
-max_epoch = 500 #max iterations in the simulation per trajectory
-nTraj = np.array([0.2, 0.5, 1, 2, 4, 10]) #number of trajectories generated
+max_epoch = 2000 #max iterations in the simulation per trajectory
+nTraj = np.array([0.1, 0.2, 0.3, 0.5, 1]) #number of trajectories generated
 
 # %%
 
@@ -46,7 +46,7 @@ class MyPool(multiprocessing.pool.Pool):
 
 
 def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, seed):
-    max_epoch = 500    
+    max_epoch = 2000    
     TrainingSet = TrainingSet_tot[0:int(max_epoch*nTraj[i]),:]
     Labels = Labels_tot[0:int(max_epoch*nTraj[i])]
     option_space = 2

@@ -23,12 +23,12 @@ pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
 ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
 
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = 200 #number of trajectories generated
+nTraj = 50 #number of trajectories generated
 TrainingSet_Array = []
 Labels_Array = []
 Reward_Array = []
 
-for seed in range(10):
+for seed in range(30):
     [trajExpert, controlExpert, OptionsExpert, 
      TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj, seed)
     ss = expert.Environment.stateSpace

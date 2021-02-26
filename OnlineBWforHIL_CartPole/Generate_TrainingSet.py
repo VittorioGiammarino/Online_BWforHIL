@@ -26,8 +26,8 @@ lower_bounds = [expert.env.observation_space.low[0], -0.3, expert.env.observatio
 upper_bounds = [expert.env.observation_space.high[0], 0.3, expert.env.observation_space.high[2], np.radians(50) ]
 expert = World.CartPole.Expert(n_bins, lower_bounds, upper_bounds, Q_table)
 
-max_epoch = 500 #max iterations in the simulation per trajectory
-nTraj = 10 #number of trajectories generated
+max_epoch = 2000 #max iterations in the simulation per trajectory
+nTraj = 3 #number of trajectories generated
 TrainingSet_Array = []
 Labels_Array = []
 Reward_Array = []
