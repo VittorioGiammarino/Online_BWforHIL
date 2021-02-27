@@ -26,7 +26,7 @@ with open('DataFromExpert/Labels_Array.npy', 'rb') as f:
     
 # %%
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10, 20]) #number of trajectories generated
+nTraj = np.array([1, 2, 5, 10, 20, 30]) #number of trajectories generated
 
 # %%
 

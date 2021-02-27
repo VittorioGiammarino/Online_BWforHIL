@@ -80,7 +80,7 @@ for trajs in range(len(results_online)):
 
 # %% Plot
 max_epoch = 200 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10, 15, 20, 25]) #number of trajectories generated
+nTraj = np.array([1, 2, 5, 10]) #number of trajectories generated
 Samples = max_epoch*nTraj
 
 Reward_Expert = np.sum(Reward_Array)/(Reward_Array.shape[0]*Reward_Array.shape[1])
@@ -116,7 +116,7 @@ plt.savefig('Figures/Comparison/Reward_LL.png', format='png')
 # plt.savefig('Figures/Comparison/Time_LL.eps', format='eps')   
 
 seed = 0
-trial = 0
+trial = 3
 fig, ax1 = plt.subplots()
 ax1.set_xlabel('time [h]' , color='k')
 ax1.set_ylabel('likelihood')
@@ -126,7 +126,46 @@ ax1.tick_params(axis='x', labelcolor='k')
 ax1.legend(loc=0, facecolor = '#d8dcd6')
 ax1.set_title('{} Training Samples'.format(Samples[trial]))
 plt.savefig('Figures/likelihood_comparison_Samples{}_Seed{}.eps'.format(Samples[trial], seed), format='eps')
+# %% reward Scaled
 
+Reward_Expert = np.sum(Reward_Array)/(Reward_Array.shape[0]*Reward_Array.shape[1])
+STDExpert = np.sum(np.std(Reward_Array, axis = 1))/len(np.std(Reward_Array, axis = 1))
+
+size = len(nTraj)
+
+# fig, ax = plt.subplots()
+# plt.xscale('log')
+# plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k'])
+# clrs = sns.color_palette("husl", 5)
+# ax.plot(Samples, List_RewardOnline[0], label='Online-BW', c=clrs[0])
+# ax.fill_between(Samples, List_RewardOnline[0]-List_STDOnline[0], List_RewardOnline[0]+List_STDOnline[0], alpha=0.1, facecolor=clrs[0])
+# ax.plot(Samples, List_RewardBatch[0], label = 'Batch-BW', c=clrs[1])
+# ax.fill_between(Samples, List_RewardBatch[0]-List_STDBatch[0], List_RewardBatch[0]+List_STDBatch[0], alpha=0.1, facecolor=clrs[1])
+# ax.plot(Samples, Reward_Expert*np.ones(len(nTraj)), label='Expert', c=clrs[2])
+# ax.fill_between(Samples, Reward_Expert*np.ones(len(nTraj))-STDExpert, Reward_Expert+STDExpert, alpha=0.1, facecolor=clrs[2])
+# ax.legend(loc=4, facecolor = '#d8dcd6')
+# ax.set_xlabel('Training Samples')
+# ax.set_ylabel('Average Reward')
+# ax.set_title('Grid World')
+# plt.savefig('Figures/Comparison/Reward_GridWorld_NN.png', format='png')
+
+fig, ax = plt.subplots()
+plt.xscale('log')
+plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k'])
+clrs = sns.color_palette("husl", 5)
+ax.plot(Samples, List_RewardOnline[0:size]/Reward_Expert, '-d', label='Online-BW', c=clrs[0])
+ax.fill_between(Samples, List_RewardOnline[0:size]/Reward_Expert-List_STDOnline[0:size]/Reward_Expert, 
+                List_RewardOnline[0:size]/Reward_Expert+List_STDOnline[0:size]/Reward_Expert, alpha=0.1, facecolor=clrs[0])
+ax.plot(Samples, List_RewardBatch[0:size]/Reward_Expert, '-d', label = 'Batch-BW', c=clrs[1])
+ax.fill_between(Samples, List_RewardBatch[0:size]/Reward_Expert-List_STDBatch[0:size]/Reward_Expert, 
+                List_RewardBatch[0:size]/Reward_Expert+List_STDBatch[0:size]/Reward_Expert, alpha=0.1, facecolor=clrs[1])
+ax.plot(Samples, Reward_Expert*np.ones(len(nTraj))/Reward_Expert, label='Expert', c=clrs[2])
+#ax.fill_between(Samples, Reward_Expert*np.ones(len(nTraj))-STDExpert, Reward_Expert+STDExpert, alpha=0.1, facecolor=clrs[2])
+ax.legend(loc=4, facecolor = '#d8dcd6')
+ax.set_xlabel('Training Samples')
+ax.set_ylabel('Average Reward')
+ax.set_title('Grid World')
+plt.savefig('Figures/Comparison/Reward_LL_2_scaled.png', format='png')
 
 # %%
 
