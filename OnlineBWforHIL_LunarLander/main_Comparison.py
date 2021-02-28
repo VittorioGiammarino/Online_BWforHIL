@@ -164,7 +164,7 @@ ax.plot(Samples, Reward_Expert*np.ones(len(nTraj))/Reward_Expert, label='Expert'
 ax.legend(loc=4, facecolor = '#d8dcd6')
 ax.set_xlabel('Training Samples')
 ax.set_ylabel('Average Reward')
-ax.set_title('Grid World')
+ax.set_title('Lunar Lander')
 plt.savefig('Figures/Comparison/Reward_LL_2_scaled.png', format='png')
 
 # %%

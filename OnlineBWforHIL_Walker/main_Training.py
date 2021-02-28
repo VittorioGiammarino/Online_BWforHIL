@@ -48,8 +48,8 @@ nTraj = 20
 # BatchSim = World.Walker.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
 BatchSim = World.Walker.Simulation(Agent_BatchHIL.NN_options, Agent_BatchHIL.NN_actions, Agent_BatchHIL.NN_termination, Labels)
 [trajBatch, controlBatch, OptionsBatch, 
- TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj, 1)
-x, u, o, b = BatchSim.HILVideoSimulation('Videos/VideosBatch/Simulation', max_epoch)
+ TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP_Greedy(max_epoch,nTraj, 1)
+x, u, o, b = BatchSim.HILVideoSimulation_Greedy('Videos/VideosBatch/Simulation', max_epoch)
 
 
 # %% Online BW for HIL with tabular parameterization: Training
