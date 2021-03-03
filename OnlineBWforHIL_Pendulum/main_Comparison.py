@@ -127,6 +127,33 @@ plt.savefig('Figures/likelihood_comparison_Samples{}_Seed{}.eps'.format(Samples[
 
 # %%
 
+max_epoch = 100 #max iterations in the simulation per trajectory
+nTraj = np.array([1, 2, 5, 10, 20])
+Samples = max_epoch*nTraj
+
+Reward_Expert = 1000+np.sum(Reward_Array)/(Reward_Array.shape[0]*Reward_Array.shape[1])
+STDExpert = np.sum(np.std(Reward_Array, axis = 1))/len(np.std(Reward_Array, axis = 1))
+
+size = len(List_RewardOnline)
+
+fig, ax = plt.subplots()
+plt.xscale('log')
+plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k', '3k'])
+clrs = sns.color_palette("husl", 5)
+ax.plot(Samples[0:size], (1000+List_RewardOnline)/Reward_Expert,'-d', label='Online-BW', c=clrs[0])
+ax.fill_between(Samples[0:size], (1000+List_RewardOnline)/Reward_Expert-List_STDOnline/Reward_Expert, (1000+List_RewardOnline)/Reward_Expert+List_STDOnline/Reward_Expert, alpha=0.1, facecolor=clrs[0])
+ax.plot(Samples[0:size], (1000+List_RewardBatch[0:size])/Reward_Expert,'-d', label = 'Batch-BW', c=clrs[1])
+ax.fill_between(Samples[0:size], (1000+List_RewardBatch[0:size])/Reward_Expert-List_STDBatch[0:size]/Reward_Expert, (1000+List_RewardBatch[0:size])/Reward_Expert+List_STDBatch[0:size]/Reward_Expert, alpha=0.1, facecolor=clrs[1])
+ax.plot(Samples[0:size], (Reward_Expert*np.ones(size))/Reward_Expert, label='Expert', c=clrs[2])
+# ax.fill_between(Samples[0:size], Reward_Expert*np.ones(size)-STDExpert, Reward_Expert+STDExpert, alpha=0.1, facecolor=clrs[2])
+ax.legend(loc=4, facecolor = '#d8dcd6')
+ax.set_xlabel('Training Samples')
+ax.set_ylabel('Average Reward')
+ax.set_title('Pendulum')
+plt.savefig('Figures/Comparison/Reward_pendulum_scaled.png', format='png')
+
+# %%
+
 with open('Models/Saved_Model_Expert/W_weights.npy', 'rb') as f:
     weights = np.load(f, allow_pickle=True)
 
