@@ -15,21 +15,22 @@ import matplotlib.pyplot as plt
   
 
 # %% Expert Policy Generation and simulation
-max_epoch = 20000
-nTraj = 1000
+max_epoch = 200
+nTraj = 2000
 seed = 0
 TrainingSet, Labels, Reward = World.LunarLander.Expert.Evaluation(nTraj, max_epoch, seed)
 TrainingSet = np.round(TrainingSet,3)
 
 # %% Hierarchical policy initialization 
 option_space = 2
+seed = 0
     
 # %% Batch BW for HIL with tabular parameterization: Training
-M_step_epoch = 50
+M_step_epoch = 1
 size_batch = 33
 optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
 Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer) 
-N=10 #number of iterations for the BW algorithm
+N=1 #number of iterations for the BW algorithm
 start_batch_time = time.time()
 pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch, time_per_iteration = Agent_BatchHIL.Baum_Welch(N, 1)
 end_batch_time = time.time()
@@ -39,7 +40,7 @@ max_epoch = 20000
 nTraj = 3
 BatchSim = World.LunarLander.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
 [trajBatch, controlBatch, OptionsBatch, 
- TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
+ TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj, seed)
 x, u, o, b = BatchSim.HILVideoSimulation('Videos/VideosBatch/Simulation', max_epoch)
 World.LunarLander.Plot(x, u, o, b, 'Figures/FiguresBatch/Batch_simulation.eps')
 
@@ -47,15 +48,15 @@ World.LunarLander.Plot(x, u, o, b, 'Figures/FiguresBatch/Batch_simulation.eps')
 M_step_epoch = 1
 optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
 Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer) 
-T_min = 400
+T_min = 100
 start_online_time = time.time()
-pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min)
+pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, Batch_time)
 end_online_time = time.time()
 Online_time = end_online_time-start_online_time
 #evaluation
 OnlineSim = World.LunarLander.Simulation(pi_hi_online, pi_lo_online, pi_b_online, Labels)
 [trajOnline, controlOnline, OptionsOnline, 
- TerminationOnline, RewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
+ TerminationOnline, RewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj, seed)
 x, u, o, b = OnlineSim.HILVideoSimulation('Videos/VideosOnline/Simulation', max_epoch)
 World.LunarLander.Plot(x, u, o, b, 'Figures/FiguresOnline/Online_simulation.eps')
 

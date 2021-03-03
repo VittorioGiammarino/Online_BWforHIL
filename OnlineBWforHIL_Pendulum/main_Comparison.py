@@ -21,7 +21,7 @@ with open('DataFromExpert/Reward_Array.npy', 'rb') as f:
 with open('Comparison/Batch/results_batch.npy', 'rb') as f:
     results_batch = np.load(f, allow_pickle=True).tolist()
     
-with open('Comparison/Online/results_online.npy', 'rb') as f:
+with open('Comparison/Online/results_online_new.npy', 'rb') as f:
     results_online = np.load(f, allow_pickle=True).tolist()
    
 # %% pre-processing batch   
@@ -78,7 +78,7 @@ for trajs in range(len(results_online)):
 # %% Plot
 
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10, 20, 30])
+nTraj = np.array([1, 2, 5, 10, 20])
 Samples = max_epoch*nTraj
 
 Reward_Expert = np.sum(Reward_Array)/(Reward_Array.shape[0]*Reward_Array.shape[1])
