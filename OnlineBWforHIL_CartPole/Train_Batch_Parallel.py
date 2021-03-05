@@ -19,15 +19,15 @@ import multiprocessing.pool
 # %% Expert Data
 
 with open('DataFromExpert/TrainingSet_Array.npy', 'rb') as f:
-    TrainingSet_Array = np.load(f)
+    TrainingSet_Array = np.load(f, allow_pickle=True).tolist()
     
 with open('DataFromExpert/Labels_Array.npy', 'rb') as f:
-    Labels_Array = np.load(f)
+    Labels_Array = np.load(f, allow_pickle=True).tolist()
     
 # %%
 
 max_epoch = 2000 #max iterations in the simulation per trajectory
-nTraj = np.array([0.1, 0.2, 0.3, 0.5, 1]) #number of trajectories generated
+nTraj = np.array([0.025, 0.05, 0.1, 0.2, 0.3]) #number of trajectories generated
 
 # %%
 
@@ -56,7 +56,7 @@ def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, seed):
     size_batch = 32
     if np.mod(len(TrainingSet),size_batch)==0:
         size_batch = size_batch + 1
-    optimizer = keras.optimizers.Adamax(learning_rate=1e-3)    
+    optimizer = keras.optimizers.Adamax(learning_rate=1e-2)    
     Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer)
     N=20 #number of iterations for the BW algorithm
     start_batch_time = time.time()
@@ -96,10 +96,10 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     Likelihood_batch_list = []
     time_likelihood_batch_list =[]
 
-    TrainingSet_tot = TrainingSet_Array[seed, :, :]
-    Labels_tot = Labels_Array[seed, :]
+    TrainingSet_tot = TrainingSet_Array[seed]
+    Labels_tot = Labels_Array[seed]
         
-    pool = multiprocessing.Pool(processes=5)
+    pool = multiprocessing.Pool(processes=1)
     args = [(i, nTraj, TrainingSet_tot, Labels_tot, seed) for i in range(len(nTraj))]
     givenSeed_training_results = pool.starmap(DifferentTrainingSet, args) 
     
@@ -122,7 +122,7 @@ def train(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj):
     return List_TimeBatch, List_RewardBatch, List_STDBatch, List_LikelihoodBatch, List_TimeLikelihoodBatch
 
 
-Nseed = 5
+Nseed = 10
 pool = MyPool(Nseed)
 args = [(seed, TrainingSet_Array, Labels_Array, max_epoch, nTraj) for seed in range(Nseed)]
 results_batch = pool.starmap(train, args) 

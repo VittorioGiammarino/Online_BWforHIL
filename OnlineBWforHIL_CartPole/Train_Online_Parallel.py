@@ -19,10 +19,10 @@ import multiprocessing.pool
 # %% Expert Data
 
 with open('DataFromExpert/TrainingSet_Array.npy', 'rb') as f:
-    TrainingSet_Array = np.load(f)
+    TrainingSet_Array = np.load(f, allow_pickle=True).tolist()
     
 with open('DataFromExpert/Labels_Array.npy', 'rb') as f:
-    Labels_Array = np.load(f)
+    Labels_Array = np.load(f, allow_pickle=True).tolist()
     
 with open('Comparison/Batch/results_batch.npy', 'rb') as f:
     results_batch = np.load(f, allow_pickle=True).tolist()
@@ -44,7 +44,7 @@ List_TimeBatch[0] = np.divide(List_TimeBatch[0],len(results_batch))
 # %%
 
 max_epoch = 2000 #max iterations in the simulation per trajectory
-nTraj = np.array([0.1, 0.2, 0.3, 0.5, 1]) #number of trajectories generated
+nTraj = np.array([0.025, 0.05, 0.1, 0.2, 0.3]) #number of trajectories generated
 
 #%%
 
@@ -113,8 +113,8 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
     Likelihood_online_list = []
     time_likelihood_online_list =[]
 
-    TrainingSet_tot = TrainingSet_Array[seed, :, :]
-    Labels_tot = Labels_Array[seed, :]
+    TrainingSet_tot = TrainingSet_Array[seed]
+    Labels_tot = Labels_Array[seed]
     TimeBatch = List_TimeBatch[0]
         
     pool = multiprocessing.Pool(processes=1)
@@ -138,7 +138,7 @@ def train(seed, TrainingSet_Array, Labels_Array, List_TimeBatch, max_epoch, nTra
         
     return List_TimeOnline, List_RewardOnline, List_STDOnline, List_LikelihoodOnline, List_TimeLikelihoodOnline
 
-Nseed = 5
+Nseed = 10
 results_online = []
 for i in range(len(nTraj)):
     pool = MyPool(Nseed)
