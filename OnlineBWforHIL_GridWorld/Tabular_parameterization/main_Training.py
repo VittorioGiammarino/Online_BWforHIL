@@ -16,7 +16,7 @@ expert = World.TwoRewards.Expert()
 pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
 ExpertSim = expert.Simulation(pi_hi_expert, pi_lo_expert, pi_b_expert)
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = 10 #number of trajectories generated
+nTraj = 3 #number of trajectories generated
 [trajExpert, controlExpert, OptionsExpert, 
   TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
 
@@ -33,7 +33,7 @@ Batch_time = end_batch_time-start_batch_time
 
 # %% Online BW for HIL with tabular parameterization: Training
 Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space)
-T_min = 500
+T_min = 100
 
 start_online_time = time.time()
 pi_hi_online, pi_lo_online, pi_b_online, chi, rho, phi  = Agent_OnlineHIL.Online_Baum_Welch(T_min)
