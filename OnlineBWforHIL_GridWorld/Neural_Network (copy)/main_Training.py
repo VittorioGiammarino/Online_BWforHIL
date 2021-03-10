@@ -19,21 +19,22 @@ ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
 max_epoch = 100 #max iterations in the simulation per trajectory
 nTraj = 5 #number of trajectories generated
 [trajExpert, controlExpert, OptionsExpert, 
- TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
+ TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj,0)
 
 # %% Hierarchical policy initialization Initialiazation 
 ss = expert.Environment.stateSpace
 Labels, TrainingSet = BatchBW_HIL.ProcessData(trajExpert, controlExpert, psiExpert, ss)
 option_space = 2
+seed=0
     
 # %% Batch BW for HIL with tabular parameterization: Training
-M_step_epoch = 50
+M_step_epoch = 10
 size_batch = 32
-optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
+optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
 Agent_BatchHIL = BatchBW_HIL.BatchHIL(TrainingSet, Labels, option_space, M_step_epoch, size_batch, optimizer) 
 N=10 #number of iterations for the BW algorithm
 start_batch_time = time.time()
-pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch = Agent_BatchHIL.Baum_Welch(N)
+pi_hi_batch, pi_lo_batch, pi_b_batch, likelihood_batch, time_per_iteration = Agent_BatchHIL.Baum_Welch(N,1)
 end_batch_time = time.time()
 Batch_time = end_batch_time-start_batch_time
 #evaluation
@@ -41,18 +42,19 @@ Batch_Plot = expert.Plot(pi_hi_batch, pi_lo_batch, pi_b_batch)
 Batch_Plot.PlotHierachicalPolicy('Figures/FiguresBatch/Batch_High_policy_psi{}.eps','Figures/FiguresBatch/Batch_Action_option{}_psi{}.eps','Figures/FiguresBatch/Batch_Termination_option{}_psi{}.eps')
 BatchSim = expert.Simulation_NN(pi_hi_batch, pi_lo_batch, pi_b_batch)
 [trajBatch, controlBatch, OptionsBatch, 
- TerminationBatch, psiBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
+ TerminationBatch, psiBatch, rewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj,seed)
 best = np.argmax(rewardBatch)  
 BatchSim.HILVideoSimulation(controlBatch[best][:], trajBatch[best][:], 
                             OptionsBatch[best][:], psiBatch[best][:],"Videos/VideosBatchAgent/sim_BatchBW.mp4")
 
 # %% Online BW for HIL with tabular parameterization: Training
-M_step_epoch = 1
-optimizer = keras.optimizers.Adamax(learning_rate=1e-3)
+M_step_epoch = 30
+stopping_time = Batch_time
+optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
 Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer) 
 T_min = 400
 start_online_time = time.time()
-pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min)
+pi_hi_online, pi_lo_online, pi_b_online, likelihood_online, time_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, Batch_time)
 end_online_time = time.time()
 Online_time = end_online_time-start_online_time
 #evaluation
@@ -60,7 +62,27 @@ Online_Plot = expert.Plot(pi_hi_online, pi_lo_online, pi_b_online)
 Online_Plot.PlotHierachicalPolicy('Figures/FiguresOnline/Online_High_policy_psi{}.eps','Figures/FiguresOnline/Online_Action_option{}_psi{}.eps','Figures/FiguresOnline/Online_Termination_option{}_psi{}.eps')
 OnlineSim = expert.Simulation_NN(pi_hi_online, pi_lo_online, pi_b_online)
 [trajOnline, controlOnline, OptionsOnline, 
- TerminationOnline, psiOnline, rewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj)
+ TerminationOnline, psiOnline, rewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj,seed)
+best = np.argmax(rewardOnline)  
+OnlineSim.HILVideoSimulation(controlOnline[best][:], trajOnline[best][:], 
+                            OptionsOnline[best][:], psiOnline[best][:],"Videos/VideosOnlineAgent/sim_OnlineBW.mp4")
+
+# %% Online BW modified for HIL with tabular parameterization: Training
+M_step_epoch = 30
+stopping_time = Batch_time
+optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
+Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL_modified(TrainingSet, Labels, option_space, M_step_epoch, optimizer) 
+T_min = 400
+start_online_time = time.time()
+pi_hi_online, pi_lo_online, pi_b_online, likelihood_online_mod, time_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, Batch_time)
+end_online_time = time.time()
+Online_time = end_online_time-start_online_time
+#evaluation
+Online_Plot = expert.Plot(pi_hi_online, pi_lo_online, pi_b_online)
+Online_Plot.PlotHierachicalPolicy('Figures/FiguresOnline/Online_High_policy_psi{}.eps','Figures/FiguresOnline/Online_Action_option{}_psi{}.eps','Figures/FiguresOnline/Online_Termination_option{}_psi{}.eps')
+OnlineSim = expert.Simulation_NN(pi_hi_online, pi_lo_online, pi_b_online)
+[trajOnline, controlOnline, OptionsOnline, 
+ TerminationOnline, psiOnline, rewardOnline_mod] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj,seed)
 best = np.argmax(rewardOnline)  
 OnlineSim.HILVideoSimulation(controlOnline[best][:], trajOnline[best][:], 
                             OptionsOnline[best][:], psiOnline[best][:],"Videos/VideosOnlineAgent/sim_OnlineBW.mp4")
