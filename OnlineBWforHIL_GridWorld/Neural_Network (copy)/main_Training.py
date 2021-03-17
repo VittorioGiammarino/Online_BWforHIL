@@ -17,7 +17,7 @@ expert = World.TwoRewards.Expert()
 pi_hi_expert, pi_lo_expert, pi_b_expert = expert.HierarchicalPolicy()
 ExpertSim = expert.Simulation_tabular(pi_hi_expert, pi_lo_expert, pi_b_expert)
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = 5 #number of trajectories generated
+nTraj = 1 #number of trajectories generated
 [trajExpert, controlExpert, OptionsExpert, 
  TerminationExpert, psiExpert, rewardExpert] = ExpertSim.HierarchicalStochasticSampleTrajMDP(max_epoch,nTraj,0)
 
@@ -49,10 +49,10 @@ BatchSim.HILVideoSimulation(controlBatch[best][:], trajBatch[best][:],
 
 # %% Online BW for HIL with tabular parameterization: Training
 M_step_epoch = 30
-stopping_time = Batch_time
+Batch_time=200
 optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
 Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer) 
-T_min = 400
+T_min = 50
 start_online_time = time.time()
 pi_hi_online, pi_lo_online, pi_b_online, likelihood_online, time_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, Batch_time)
 end_online_time = time.time()
@@ -72,7 +72,7 @@ M_step_epoch = 30
 stopping_time = Batch_time
 optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
 Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL_modified(TrainingSet, Labels, option_space, M_step_epoch, optimizer) 
-T_min = 400
+T_min = 50
 start_online_time = time.time()
 pi_hi_online, pi_lo_online, pi_b_online, likelihood_online_mod, time_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, Batch_time)
 end_online_time = time.time()

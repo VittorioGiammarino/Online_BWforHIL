@@ -166,7 +166,7 @@ ax.legend(loc=4, facecolor = '#d8dcd6')
 ax.set_xlabel('Training Samples')
 ax.set_ylabel('Average Reward')
 ax.set_title('CartPole')
-plt.savefig('Figures/Comparison/Reward_CartPole_scaled.png', format='png')
+plt.savefig('Figures/Comparison/Reward_CartPole_scaled2.png', format='png')
 
 # %%
 

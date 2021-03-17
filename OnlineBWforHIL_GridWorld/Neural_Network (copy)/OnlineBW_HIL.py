@@ -633,10 +633,10 @@ class OnlineHIL_modified:
         
         for ot_past in range(self.option_space):
             for ot in range(self.option_space):
-                loss_pi_hi = loss_pi_hi - kb.sum(phi[ot_past,1,ot,:,Action]*kb.log(kb.clip(NN_options(State,training=True)[0,ot],1e-10,1.0)))
+                loss_pi_hi = loss_pi_hi - kb.sum(phi[ot_past,1,ot,:,int(Action)]*kb.log(kb.clip(NN_options(State,training=True)[0,ot],1e-10,1.0)))
                 for bt in range(self.termination_space):
-                    loss_pi_lo = loss_pi_lo - kb.sum(phi[ot_past,bt,ot,:,Action]*kb.log(kb.clip(NN_actions[ot](State,training=True)[0,Action],1e-10,1.0)))
-                    loss_pi_b = loss_pi_b - kb.sum(phi[ot_past,bt,ot,:,Action]*kb.log(kb.clip(NN_termination[ot_past](State,training=True)[0,bt],1e-10,1.0)))
+                    loss_pi_lo = loss_pi_lo - kb.sum(phi[ot_past,bt,ot,:,int(Action)]*kb.log(kb.clip(NN_actions[ot](State,training=True)[0,int(Action)],1e-10,1.0)))
+                    loss_pi_b = loss_pi_b - kb.sum(phi[ot_past,bt,ot,:,int(Action)]*kb.log(kb.clip(NN_termination[ot_past](State,training=True)[0,bt],1e-10,1.0)))
                                     
         loss = loss_pi_hi + loss_pi_lo + loss_pi_b
         

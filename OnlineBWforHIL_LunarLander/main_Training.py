@@ -37,7 +37,7 @@ end_batch_time = time.time()
 Batch_time = end_batch_time-start_batch_time
 #evaluation
 max_epoch = 20000
-nTraj = 3
+nTraj = 20
 BatchSim = World.LunarLander.Simulation(pi_hi_batch, pi_lo_batch, pi_b_batch, Labels)
 [trajBatch, controlBatch, OptionsBatch, 
  TerminationBatch, RewardBatch] = BatchSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj, seed)
@@ -47,10 +47,10 @@ World.LunarLander.Plot(x, u, o, b, 'Figures/FiguresBatch/Batch_simulation.eps')
 # %% Online BW for HIL with tabular parameterization: Training
 M_step_epoch = 1
 optimizer = keras.optimizers.Adamax(learning_rate=1e-2)
-Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet, Labels, option_space, M_step_epoch, optimizer) 
+Agent_OnlineHIL = OnlineBW_HIL.OnlineHIL(TrainingSet[0:7000,:], Labels[0:7000], option_space, M_step_epoch, optimizer) 
 T_min = 100
 start_online_time = time.time()
-pi_hi_online, pi_lo_online, pi_b_online, likelihood_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, Batch_time)
+pi_hi_online, pi_lo_online, pi_b_online, likelihood_online, time_online = Agent_OnlineHIL.Online_Baum_Welch_together(T_min, Batch_time)
 end_online_time = time.time()
 Online_time = end_online_time-start_online_time
 #evaluation
@@ -59,6 +59,11 @@ OnlineSim = World.LunarLander.Simulation(pi_hi_online, pi_lo_online, pi_b_online
  TerminationOnline, RewardOnline] = OnlineSim.HierarchicalStochasticSampleTrajMDP(max_epoch, nTraj, seed)
 x, u, o, b = OnlineSim.HILVideoSimulation('Videos/VideosOnline/Simulation', max_epoch)
 World.LunarLander.Plot(x, u, o, b, 'Figures/FiguresOnline/Online_simulation.eps')
+
+# %%
+pi_hi_online, pi_lo_online, pi_b_online = Agent_OnlineHIL.NN_options, Agent_OnlineHIL.NN_actions, Agent_OnlineHIL.NN_termination
+
+likelihood_online = Agent_OnlineHIL.likelihood_approximation()
 
 
 # %% Save Model

@@ -42,7 +42,7 @@ List_TimeBatch[0] = np.divide(List_TimeBatch[0],len(results_batch))
 
 # %%
 max_epoch = 100 #max iterations in the simulation per trajectory
-nTraj = np.array([1, 2, 5, 10, 20, 30]) #number of trajectories generated
+nTraj = np.array([1, 2, 5, 10, 20]) #number of trajectories generated
 
 #%%
 
@@ -62,8 +62,8 @@ class MyPool(multiprocessing.pool.Pool):
 
 def DifferentTrainingSet(i, nTraj, TrainingSet_tot, Labels_tot, TimeBatch, seed):
     max_epoch = 100
-    TrainingSet = np.round(np.concatenate((TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:]),axis=0),3)
-    Labels = np.round(np.concatenate((Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]]),axis=0),1)
+    TrainingSet = np.round(np.concatenate((TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:],TrainingSet_tot[0:max_epoch*nTraj[i],:]),axis=0),3)
+    Labels = np.round(np.concatenate((Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]],Labels_tot[0:max_epoch*nTraj[i]]),axis=0),1)
     option_space = 2
         
     #Stopping Time

@@ -390,12 +390,13 @@ class OnlineHIL:
             if t > T_min:
                 loss = OnlineHIL.OptimizeLoss(self, phi, t)
                 Time_list.append(time.time() - time_init)
-                likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
+                #likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
                 
                 if Time_list[-1] >= StoppingTime:
                     break     
                 
         print('Maximization done, Total Loss:',float(loss))
+        likelihood = np.append(likelihood, OnlineHIL.likelihood_approximation(self))
                 
         return self.NN_options, self.NN_actions, self.NN_termination, likelihood, Time_list
                 

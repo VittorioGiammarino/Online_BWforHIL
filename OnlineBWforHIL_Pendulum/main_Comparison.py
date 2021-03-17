@@ -138,7 +138,7 @@ size = len(List_RewardOnline)
 
 fig, ax = plt.subplots()
 plt.xscale('log')
-plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k', '3k'])
+plt.xticks(Samples, labels=['100', '200', '500', '1k', '2k'])
 clrs = sns.color_palette("husl", 5)
 ax.plot(Samples[0:size], (1000+List_RewardOnline)/Reward_Expert,'-d', label='Online-BW', c=clrs[0])
 ax.fill_between(Samples[0:size], (1000+List_RewardOnline)/Reward_Expert-List_STDOnline/Reward_Expert, (1000+List_RewardOnline)/Reward_Expert+List_STDOnline/Reward_Expert, alpha=0.1, facecolor=clrs[0])
@@ -150,7 +150,7 @@ ax.legend(loc=4, facecolor = '#d8dcd6')
 ax.set_xlabel('Training Samples')
 ax.set_ylabel('Average Reward')
 ax.set_title('Pendulum')
-plt.savefig('Figures/Comparison/Reward_pendulum_scaled.png', format='png')
+plt.savefig('Figures/Comparison/Reward_pendulum_scaled2.png', format='png')
 
 # %%
 
